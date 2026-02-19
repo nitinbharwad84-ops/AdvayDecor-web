@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -13,7 +14,6 @@ import {
     X,
     ChevronRight,
     LogOut,
-    Shield,
 } from 'lucide-react';
 import { useAdminAuthStore } from '@/lib/auth-store';
 import { createClient } from '@/lib/supabase';
@@ -97,10 +97,16 @@ export default function AdminLayout({
                         {/* Admin branding */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
                             <div style={{
-                                width: '40px', height: '40px', borderRadius: '0.75rem',
-                                background: '#0a0a23', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: '40px', height: '40px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>
-                                <Shield size={18} style={{ color: '#00b4d8' }} />
+                                <Image
+                                    src="/logo.png"
+                                    alt="Advay Decor"
+                                    width={32}
+                                    height={32}
+                                    style={{ objectFit: 'contain' }}
+                                />
                             </div>
                             <div>
                                 <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0a0a23' }}>Admin Panel</p>
@@ -199,10 +205,16 @@ export default function AdminLayout({
                                 <div style={{ padding: '1.5rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
                                         <div style={{
-                                            width: '40px', height: '40px', borderRadius: '0.75rem',
-                                            background: '#0a0a23', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            width: '40px', height: '40px',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         }}>
-                                            <Shield size={18} style={{ color: '#00b4d8' }} />
+                                            <Image
+                                                src="/logo.png"
+                                                alt="Advay Decor"
+                                                width={32}
+                                                height={32}
+                                                style={{ objectFit: 'contain' }}
+                                            />
                                         </div>
                                         <div>
                                             <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0a0a23' }}>Admin Panel</p>
@@ -286,7 +298,14 @@ function AdminRedirect() {
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', gap: '1rem',
         }}>
-            <Shield size={32} style={{ color: 'rgba(255,255,255,0.3)' }} />
+            <div style={{ position: 'relative', width: '48px', height: '48px', opacity: 0.5 }}>
+                <Image
+                    src="/logo.png"
+                    alt="Advay Decor"
+                    fill
+                    style={{ objectFit: 'contain' }}
+                />
+            </div>
             <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)' }}>
                 Redirecting to admin login...
             </p>

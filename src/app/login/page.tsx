@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, User, LogIn, UserPlus } from 'lucide-react';
@@ -114,7 +115,15 @@ export default function LoginPage() {
             >
                 {/* Logo / Header */}
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <Link href="/" style={{ display: 'inline-block', marginBottom: '1rem', textDecoration: 'none' }}>
+                    <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', textDecoration: 'none' }}>
+                        <Image
+                            src="/logo.png"
+                            alt="Advay Decor"
+                            width={48}
+                            height={48}
+                            style={{ objectFit: 'contain' }}
+                            priority
+                        />
                         <span className="font-[family-name:var(--font-display)]" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
                             <span style={{ color: '#0a0a23' }}>Advay</span>
                             <span style={{ color: '#00b4d8' }}>Decor</span>

@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase';
 import { useAdminAuthStore } from '@/lib/auth-store';
@@ -122,14 +123,21 @@ export default function AdminLoginPage() {
                         animate={{ scale: 1 }}
                         transition={{ type: 'spring', stiffness: 300, delay: 0.2 }}
                         style={{
-                            width: '4.5rem', height: '4.5rem', borderRadius: '1.25rem',
+                            width: '5rem', height: '5rem', borderRadius: '1.25rem',
                             background: 'linear-gradient(135deg, rgba(0,180,216,0.15), rgba(0,180,216,0.05))',
                             border: '1px solid rgba(0,180,216,0.2)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             margin: '0 auto 1.5rem',
                         }}
                     >
-                        <Shield size={30} style={{ color: '#00b4d8' }} />
+                        <Image
+                            src="/logo.png"
+                            alt="Advay Decor"
+                            width={48}
+                            height={48}
+                            style={{ objectFit: 'contain' }}
+                            priority
+                        />
                     </motion.div>
 
                     <h1 className="font-[family-name:var(--font-display)]"
