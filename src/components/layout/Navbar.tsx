@@ -5,11 +5,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, User, Menu, X, ChevronRight, Search, LogOut } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { ShoppingBag, User, Menu, X, ChevronRight, Search } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { useUserAuthStore } from '@/lib/auth-store';
-import { createClient } from '@/lib/supabase';
 
 const navLinks = [
     { name: 'Home', href: '/' },
@@ -27,13 +25,7 @@ export default function Navbar() {
     const { user, isAuthenticated, clearUser } = useUserAuthStore();
     const [itemCount, setItemCount] = useState(0);
 
-    const handleLogout = async () => {
-        const supabase = createClient();
-        await supabase.auth.signOut();
-        clearUser();
-        toast.success('Signed out successfully');
-        router.push('/');
-    };
+
 
     const isHeroPage = pathname === '/';
     const showSolid = !isHeroPage || isScrolled;
@@ -200,8 +192,8 @@ export default function Navbar() {
 
                         {/* User — auth-aware */}
                         {isAuthenticated ? (
-                            <button
-                                onClick={handleLogout}
+                            <Link
+                                href="/profile"
                                 style={{
                                     position: 'relative',
                                     display: 'flex',
@@ -215,9 +207,10 @@ export default function Navbar() {
                                     transition: 'all 0.3s ease',
                                     background: 'transparent',
                                     color: showSolid ? '#0a0a23' : '#ffffff',
+                                    textDecoration: 'none',
                                 }}
-                                title={`Signed in as ${user?.email} — click to logout`}
-                                aria-label="Logout"
+                                title="My Profile"
+                                aria-label="My Profile"
                             >
                                 <User size={18} strokeWidth={1.8} />
                                 <span style={{
@@ -225,7 +218,7 @@ export default function Navbar() {
                                     width: '8px', height: '8px', borderRadius: '50%',
                                     background: '#22c55e', border: '2px solid #fff',
                                 }} />
-                            </button>
+                            </Link>
                         ) : (
                             <Link
                                 href="/login"
@@ -460,11 +453,13 @@ export default function Navbar() {
                             >
                                 {isAuthenticated ? (
                                     <>
-                                        <p style={{ fontSize: '0.75rem', color: '#9e9eb8', marginBottom: '0.75rem', textAlign: 'center' }}>
-                                            Signed in as <strong style={{ color: '#0a0a23' }}>{user?.full_name || user?.email}</strong>
-                                        </p>
-                                        <button
-                                            onClick={() => { handleLogout(); setIsMobileOpen(false); }}
+                                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                                            <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>Signed in as</p>
+                                            <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0a0a23' }}>{user?.full_name || user?.email}</p>
+                                        </div>
+                                        <Link
+                                            href="/profile"
+                                            onClick={() => setIsMobileOpen(false)}
                                             style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -473,17 +468,16 @@ export default function Navbar() {
                                                 width: '100%',
                                                 padding: '0.75rem',
                                                 borderRadius: '0.75rem',
-                                                background: 'rgba(239,68,68,0.06)',
-                                                color: '#ef4444',
-                                                border: 'none',
-                                                cursor: 'pointer',
+                                                background: '#0a0a23',
+                                                color: '#ffffff',
+                                                textDecoration: 'none',
                                                 fontWeight: 600,
                                                 fontSize: '0.875rem',
                                             }}
                                         >
-                                            <LogOut size={16} />
-                                            Sign Out
-                                        </button>
+                                            <User size={16} />
+                                            My Profile
+                                        </Link>
                                     </>
                                 ) : (
                                     <Link
