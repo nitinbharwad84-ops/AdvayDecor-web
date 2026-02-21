@@ -23,6 +23,7 @@ export default function AdminMessagesPage() {
     const [messages, setMessages] = useState<ContactMessage[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('All');
     const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
     const [replyText, setReplyText] = useState('');
     const [isReplying, setIsReplying] = useState(false);
@@ -80,11 +81,17 @@ export default function AdminMessagesPage() {
         }
     };
 
-    const filteredMessages = messages.filter((msg) =>
-        msg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        msg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        msg.message.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredMessages = messages.filter((msg) => {
+        const matchesSearch = msg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            msg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            msg.message.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesStatus = filterStatus === 'All' || msg.status.toLowerCase() === filterStatus.toLowerCase();
+
+        return matchesSearch && matchesStatus;
+    });
+
+    const statusOptions = ['All', 'New', 'Replied'];
 
     return (
         <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
@@ -105,20 +112,41 @@ export default function AdminMessagesPage() {
             <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
                 {/* Message List */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Search */}
-                    <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
-                        <input
-                            type="text"
-                            placeholder="Search messages by name, email, or content..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{
-                                width: '100%', padding: '0.875rem 1rem 0.875rem 2.75rem',
-                                borderRadius: '0.75rem', border: '1px solid #e5e7eb',
-                                fontSize: '0.9rem', outline: 'none', background: '#fff'
-                            }}
-                        />
+                    {/* Search and Filter */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', flex: '1', maxWidth: '360px', minWidth: '200px' }}>
+                            <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
+                            <input
+                                type="text"
+                                placeholder="Search by name, email, or content..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{
+                                    width: '100%', paddingLeft: '2.75rem', paddingRight: '1rem',
+                                    paddingTop: '0.625rem', paddingBottom: '0.625rem',
+                                    borderRadius: '0.75rem', border: '1px solid #e8e4dc',
+                                    background: '#ffffff', fontSize: '0.875rem',
+                                    outline: 'none', color: '#0a0a23',
+                                }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {statusOptions.map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setFilterStatus(status)}
+                                    style={{
+                                        padding: '0.5rem 1rem', borderRadius: '9999px',
+                                        fontSize: '0.75rem', fontWeight: 600,
+                                        border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                                        background: filterStatus === status ? '#0a0a23' : '#f5f0e8',
+                                        color: filterStatus === status ? '#ffffff' : '#64648b',
+                                    }}
+                                >
+                                    {status}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Messages grid/list */}
