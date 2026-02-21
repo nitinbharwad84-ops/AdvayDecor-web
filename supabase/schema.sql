@@ -289,3 +289,29 @@ DROP POLICY IF EXISTS "Admins can manage messages" ON contact_messages;
 CREATE POLICY "Admins can manage messages" ON contact_messages FOR ALL USING (public.is_admin());
 
 CREATE INDEX IF NOT EXISTS idx_contact_messages_user ON contact_messages(user_id);
+
+-- ============================================
+-- 13. PAGE CONTENT (For Policy & FAQ Pages)
+-- ============================================
+CREATE TABLE IF NOT EXISTS page_content (
+  slug TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE page_content ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view page content" ON page_content;
+CREATE POLICY "Anyone can view page content" ON page_content FOR SELECT USING (TRUE);
+
+DROP POLICY IF EXISTS "Admins can manage page content" ON page_content;
+CREATE POLICY "Admins can manage page content" ON page_content FOR ALL USING (public.is_admin());
+
+-- Insert defaults for the 3 footer links
+INSERT INTO page_content (slug, title, content) 
+VALUES 
+  ('shipping-policy', 'Shipping Policy', 'We offer free shipping on all orders above ₹999. Standard delivery takes 5-7 business days. For express delivery, expedited processing is available at checkout.'),
+  ('returns-exchanges', 'Returns & Exchanges', 'We accept returns within 5 days of delivery. Items must be in original condition with tags intact. Please reach out to support for initiate a return request.'),
+  ('faq', 'Frequently Asked Questions', 'Q: How do I track my order?\nA: You will receive a tracking link via email once your order has been dispatched.\n\nQ: Do you ship internationally?\nA: Currently, we only ship within India.')
+ON CONFLICT (slug) DO NOTHING;
