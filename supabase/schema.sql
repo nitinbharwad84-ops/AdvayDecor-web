@@ -261,6 +261,14 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 --
 -- -- Remove role column from profiles
 -- ALTER TABLE profiles DROP COLUMN IF EXISTS role;
+--
+-- -- Add coupons support to orders table
+-- ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code TEXT;
+-- ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) DEFAULT 0;
+ALTER TABLE orders 
+ADD COLUMN IF NOT EXISTS coupon_code TEXT,
+ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) DEFAULT 0;
+
 -- ============================================
 
 -- ============================================
@@ -341,3 +349,4 @@ CREATE POLICY "Anyone can read active coupons" ON coupons FOR SELECT USING (is_a
 
 DROP POLICY IF EXISTS "Admins can manage coupons" ON coupons;
 CREATE POLICY "Admins can manage coupons" ON coupons FOR ALL USING (public.is_admin());
+
