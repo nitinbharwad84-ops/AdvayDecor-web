@@ -81,6 +81,22 @@ export default function AdminMessagesPage() {
         }
     };
 
+    const markAsRead = async (msg: ContactMessage) => {
+        setSelectedMessage(msg);
+        if (msg.status === 'new') {
+            try {
+                const supabase = createClient();
+                await supabase
+                    .from('contact_messages')
+                    .update({ status: 'read' })
+                    .eq('id', msg.id);
+                fetchMessages();
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+    };
+
     const filteredMessages = messages.filter((msg) => {
         const matchesSearch = msg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             msg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -91,7 +107,7 @@ export default function AdminMessagesPage() {
         return matchesSearch && matchesStatus;
     });
 
-    const statusOptions = ['All', 'New', 'Replied'];
+    const statusOptions = ['All', 'New', 'Read', 'Replied'];
 
     return (
         <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
@@ -164,7 +180,7 @@ export default function AdminMessagesPage() {
                                     key={msg.id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    onClick={() => setSelectedMessage(msg)}
+                                    onClick={() => markAsRead(msg)}
                                     style={{
                                         background: selectedMessage?.id === msg.id ? '#f8fafc' : '#fff',
                                         border: `1px solid ${selectedMessage?.id === msg.id ? '#00b4d8' : '#e5e7eb'}`,
@@ -190,8 +206,8 @@ export default function AdminMessagesPage() {
                                     <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <span style={{
                                             fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '1rem',
-                                            background: msg.status === 'replied' ? '#dcfce7' : '#fef9c3',
-                                            color: msg.status === 'replied' ? '#166534' : '#854d0e',
+                                            background: msg.status === 'replied' ? '#dcfce7' : msg.status === 'new' ? '#fef9c3' : '#f1f5f9',
+                                            color: msg.status === 'replied' ? '#166534' : msg.status === 'new' ? '#854d0e' : '#475569',
                                         }}>
                                             {msg.status.toUpperCase()}
                                         </span>

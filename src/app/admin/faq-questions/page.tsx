@@ -103,7 +103,7 @@ export default function AdminFaqQuestionsPage() {
         return matchesSearch && matchesStatus;
     });
 
-    const statusOptions = ['All', 'New', 'Replied'];
+    const statusOptions = ['All', 'New', 'Read', 'Replied'];
 
     return (
         <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
