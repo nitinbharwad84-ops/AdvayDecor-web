@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Loader2, Mail, CheckCircle, AlertCircle, Calendar, Reply, Send, MessageCircle } from 'lucide-react';
+import { Search, Loader2, Mail, CheckCircle, AlertCircle, Calendar, Reply, Send, MessageCircle, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminFaqQuestionsPage() {
@@ -217,22 +217,23 @@ export default function AdminFaqQuestionsPage() {
                 </div>
 
                 {/* Right Panel: Selected Question Details */}
-                <div style={{ width: '100%', maxWidth: '450px' }}>
-                    <AnimatePresence mode="wait">
-                        {selectedQuestion ? (
-                            <motion.div
-                                key="selected-question"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20 }}
-                                style={{
-                                    background: '#fff', borderRadius: '1rem',
-                                    border: '1px solid #e5e7eb', overflow: 'hidden', position: 'sticky', top: '100px'
-                                }}
-                            >
-                                {/* Header */}
-                                <div style={{ padding: '1.25rem', borderBottom: '1px solid #f0ece4', background: '#f8fafc' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <AnimatePresence>
+                    {selectedQuestion && (
+                        <motion.div
+                            key="selected-question"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            style={{
+                                width: '100%', maxWidth: '450px',
+                                background: '#fff', borderRadius: '1rem',
+                                border: '1px solid #e5e7eb', overflow: 'hidden', position: 'sticky', top: '100px'
+                            }}
+                        >
+                            {/* Header */}
+                            <div style={{ padding: '1.25rem', borderBottom: '1px solid #f0ece4', background: '#f8fafc' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <h3 style={{ fontWeight: 600, color: '#0a0a23', fontSize: '1.1rem' }}>Question Details</h3>
                                         <span style={{
                                             fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.75rem', borderRadius: '1rem',
@@ -243,102 +244,81 @@ export default function AdminFaqQuestionsPage() {
                                             {selectedQuestion.status.toUpperCase()}
                                         </span>
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        <p style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <Mail size={14} /> <a href={`mailto:${selectedQuestion.email}`} style={{ color: '#00b4d8' }}>{selectedQuestion.email}</a>
-                                        </p>
-                                        <p style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <Calendar size={14} /> {new Date(selectedQuestion.created_at).toLocaleString()}
-                                        </p>
+                                    <button onClick={() => setSelectedQuestion(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <p style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Mail size={14} /> <a href={`mailto:${selectedQuestion.email}`} style={{ color: '#00b4d8' }}>{selectedQuestion.email}</a>
+                                    </p>
+                                    <p style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Calendar size={14} /> {new Date(selectedQuestion.created_at).toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <div style={{ padding: '1.5rem', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+                                <div style={{ marginBottom: '2rem' }}>
+                                    <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '0.75rem', fontSize: '0.95rem', color: '#0a0a23', whiteSpace: 'pre-wrap', border: '1px solid #e5e7eb' }}>
+                                        {selectedQuestion.question}
                                     </div>
                                 </div>
 
-                                {/* Content */}
-                                <div style={{ padding: '1.5rem', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
-                                    <div style={{ marginBottom: '2rem' }}>
-                                        <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '0.75rem', fontSize: '0.95rem', color: '#0a0a23', whiteSpace: 'pre-wrap', border: '1px solid #e5e7eb' }}>
-                                            {selectedQuestion.question}
+                                {selectedQuestion.status === 'replied' ? (
+                                    <div>
+                                        <p style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                            <CheckCircle size={16} /> Admin Reply Sent
+                                        </p>
+                                        <div style={{ background: '#fdfbf7', padding: '1.25rem', borderRadius: '0.75rem', fontSize: '0.95rem', color: '#0a0a23', whiteSpace: 'pre-wrap', border: '1px solid #f0ece4', position: 'relative' }}>
+                                            <div style={{ position: 'absolute', top: '1rem', right: '1rem', textAlign: 'right' }}>
+                                                <p style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Answered on</p>
+                                                <p style={{ fontSize: '0.8rem', color: '#0a0a23', fontWeight: 500 }}>{new Date(selectedQuestion.answered_at).toLocaleDateString()}</p>
+                                            </div>
+                                            <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Your Answer:</p>
+                                            {selectedQuestion.answer_text}
                                         </div>
                                     </div>
-
-                                    {selectedQuestion.status === 'replied' ? (
-                                        <div>
-                                            <p style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                                <CheckCircle size={16} /> Admin Reply Sent
-                                            </p>
-                                            <div style={{ background: '#fdfbf7', padding: '1.25rem', borderRadius: '0.75rem', fontSize: '0.95rem', color: '#0a0a23', whiteSpace: 'pre-wrap', border: '1px solid #f0ece4', position: 'relative' }}>
-                                                <div style={{ position: 'absolute', top: '1rem', right: '1rem', textAlign: 'right' }}>
-                                                    <p style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Answered on</p>
-                                                    <p style={{ fontSize: '0.8rem', color: '#0a0a23', fontWeight: 500 }}>{new Date(selectedQuestion.answered_at).toLocaleDateString()}</p>
-                                                </div>
-                                                <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Your Answer:</p>
-                                                {selectedQuestion.answer_text}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                            <p style={{ fontSize: '0.85rem', color: '#0a0a23', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Reply size={16} style={{ color: '#00b4d8' }} /> Write an Answer
-                                            </p>
-                                            <textarea
-                                                value={replyText}
-                                                onChange={(e) => setReplyText(e.target.value)}
-                                                placeholder="Type your answer here... This will be visible on the user's dashboard."
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                        <p style={{ fontSize: '0.85rem', color: '#0a0a23', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Reply size={16} style={{ color: '#00b4d8' }} /> Write an Answer
+                                        </p>
+                                        <textarea
+                                            value={replyText}
+                                            onChange={(e) => setReplyText(e.target.value)}
+                                            placeholder="Type your answer here... This will be visible on the user's dashboard."
+                                            style={{
+                                                width: '100%', minHeight: '180px', padding: '1rem',
+                                                border: '1px solid #e5e7eb', borderRadius: '0.75rem',
+                                                fontSize: '0.9rem', outline: 'none', resize: 'vertical',
+                                                fontFamily: 'inherit', marginBottom: '1rem'
+                                            }}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                            <button
+                                                onClick={handleReply}
+                                                disabled={isReplying || !replyText.trim()}
                                                 style={{
-                                                    width: '100%', minHeight: '180px', padding: '1rem',
-                                                    border: '1px solid #e5e7eb', borderRadius: '0.75rem',
-                                                    fontSize: '0.9rem', outline: 'none', resize: 'vertical',
-                                                    fontFamily: 'inherit', marginBottom: '1rem'
+                                                    padding: '0.75rem 1.5rem', background: '#0a0a23', color: '#fff',
+                                                    border: 'none', borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.9rem',
+                                                    cursor: (isReplying || !replyText.trim()) ? 'not-allowed' : 'pointer',
+                                                    opacity: (isReplying || !replyText.trim()) ? 0.7 : 1,
+                                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                    transition: 'all 0.2s',
                                                 }}
-                                            />
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                <button
-                                                    onClick={handleReply}
-                                                    disabled={isReplying || !replyText.trim()}
-                                                    style={{
-                                                        padding: '0.75rem 1.5rem', background: '#0a0a23', color: '#fff',
-                                                        border: 'none', borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.9rem',
-                                                        cursor: (isReplying || !replyText.trim()) ? 'not-allowed' : 'pointer',
-                                                        opacity: (isReplying || !replyText.trim()) ? 0.7 : 1,
-                                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                                        transition: 'all 0.2s',
-                                                    }}
-                                                >
-                                                    {isReplying ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                                                    {isReplying ? 'Sending...' : 'Send Answer'}
-                                                </button>
-                                            </div>
+                                            >
+                                                {isReplying ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                                {isReplying ? 'Sending...' : 'Send Answer'}
+                                            </button>
                                         </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="empty-state"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                style={{
-                                    height: '400px', display: 'flex', flexDirection: 'column',
-                                    alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-                                    padding: '2rem', background: '#f8fafc', borderRadius: '1rem',
-                                    border: '1px dashed #cbd5e1'
-                                }}
-                            >
-                                <div style={{
-                                    width: '64px', height: '64px', borderRadius: '50%', background: '#fff',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem',
-                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
-                                }}>
-                                    <MessageCircle size={32} style={{ color: '#94a3b8' }} />
-                                </div>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>Select a question</h3>
-                                <p style={{ color: '#64748b', fontSize: '0.9rem', maxWidth: '250px' }}>
-                                    Choose a question from the list to view details and answer.
-                                </p>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

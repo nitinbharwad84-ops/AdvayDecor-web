@@ -135,7 +135,7 @@ export default function AdminSettingsPage() {
     }
 
     return (
-        <div style={{ maxWidth: '900px' }}>
+        <div style={{ width: '100%' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
