@@ -34,6 +34,8 @@ interface OrderData {
     };
     status: string;
     payment_method: string;
+    coupon_code: string | null;
+    discount_amount: number;
     created_at: string;
     items: { id: string; product_title: string; variant_name: string | null; quantity: number; unit_price: number; total_price: number }[];
 }
@@ -202,6 +204,11 @@ export default function AdminOrdersPage() {
                                                         <p style={{ fontSize: '0.75rem', color: '#9e9eb8', marginTop: '0.5rem' }}>
                                                             Shipping: ₹{Number(order.shipping_fee).toLocaleString('en-IN')}
                                                         </p>
+                                                        {order.coupon_code && (
+                                                            <p style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '0.125rem' }}>
+                                                                Discount ({order.coupon_code}): -₹{Number(order.discount_amount).toLocaleString('en-IN')}
+                                                            </p>
+                                                        )}
                                                     </div>
 
                                                     {/* Shipping Address */}

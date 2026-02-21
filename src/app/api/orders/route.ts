@@ -7,19 +7,17 @@ import { createAdminClient } from '@/lib/supabase-admin';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { guest_info, shipping_address, items, payment_method, shipping_fee } = body;
+        const { guest_info, shipping_address, items, payment_method, shipping_fee, coupon_code } = body;
 
         if (!shipping_address || !items || items.length === 0) {
             return NextResponse.json({ error: 'Shipping address and items are required' }, { status: 400 });
         }
 
-        // Calculate total
         const itemsTotal = items.reduce(
             (sum: number, item: { unit_price: number; quantity: number }) =>
                 sum + item.unit_price * item.quantity,
             0
         );
-        const totalAmount = itemsTotal + (shipping_fee || 0);
 
         // Get user session to link order if logged in
         const cookieStore = await cookies();
@@ -51,6 +49,31 @@ export async function POST(request: Request) {
         // Use admin client to bypass RLS (guest orders have no user_id)
         const admin = createAdminClient();
 
+        let finalDiscount = 0;
+        let finalCouponCode = null;
+
+        if (coupon_code) {
+            const { data: coupon } = await admin
+                .from('coupons')
+                .select('*')
+                .ilike('code', coupon_code)
+                .single();
+
+            if (coupon && coupon.is_active && (!coupon.expires_at || new Date(coupon.expires_at) > new Date()) && itemsTotal >= coupon.min_order_amount) {
+                if (coupon.discount_type === 'flat') {
+                    finalDiscount = Math.min(coupon.discount_value, itemsTotal);
+                } else {
+                    finalDiscount = (itemsTotal * coupon.discount_value) / 100;
+                    if (coupon.max_discount_amount && finalDiscount > coupon.max_discount_amount) {
+                        finalDiscount = coupon.max_discount_amount;
+                    }
+                }
+                finalCouponCode = coupon.code;
+            }
+        }
+
+        const totalAmount = Math.max(0, itemsTotal - finalDiscount) + (shipping_fee || 0);
+
         // Insert order
         const { data: order, error: orderError } = await admin
             .from('orders')
@@ -62,6 +85,8 @@ export async function POST(request: Request) {
                 shipping_fee: shipping_fee || 0,
                 shipping_address,
                 payment_method: payment_method || 'COD',
+                coupon_code: finalCouponCode,
+                discount_amount: finalDiscount,
             })
             .select()
             .single();

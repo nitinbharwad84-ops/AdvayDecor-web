@@ -121,6 +121,8 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping_address JSONB NOT NULL,
   payment_method TEXT DEFAULT 'COD' CHECK (payment_method IN ('COD', 'Razorpay')),
   payment_id TEXT,
+  coupon_code TEXT,
+  discount_amount DECIMAL(10,2) DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
