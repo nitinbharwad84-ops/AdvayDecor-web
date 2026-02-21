@@ -45,7 +45,7 @@ export async function POST(request: Request) {
             finalUserId = user?.id || null;
         }
 
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('faq_questions')
             .insert({
                 user_id: finalUserId,
@@ -53,9 +53,7 @@ export async function POST(request: Request) {
                 email,
                 question,
                 status: 'new',
-            })
-            .select()
-            .single();
+            });
 
         if (error) {
             console.error('Supabase error inserting faq_question:', error);
@@ -65,7 +63,7 @@ export async function POST(request: Request) {
             );
         }
 
-        return NextResponse.json({ success: true, message: 'Question submitted successfully', data });
+        return NextResponse.json({ success: true, message: 'Question submitted successfully' });
     } catch (error: any) {
         console.error('API Error:', error);
         return NextResponse.json(

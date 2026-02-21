@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Package, ShoppingCart, IndianRupee, Clock, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import { useAdminAuthStore } from '@/lib/auth-store';
+import { useRouter } from 'next/navigation';
 
 const statIcons = [ShoppingCart, IndianRupee, Clock, Package]; // mapped by index
 const statGradients = [
@@ -33,11 +35,29 @@ export default function AdminDashboard() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const { clearAdminAuth } = useAdminAuthStore();
+    const router = useRouter();
+
     useEffect(() => {
         fetch('/api/admin/dashboard')
             .then(res => res.json())
-            .then(d => { setData(d); setLoading(false); })
-            .catch(() => setLoading(false));
+            .then(d => {
+                if (d.error) {
+                    console.error('Dashboard Error:', d.error);
+                    if (d.error === 'Not authenticated' || d.error === 'Unauthorized') {
+                        clearAdminAuth();
+                        router.push('/admin-login');
+                    }
+                    setData(null);
+                } else {
+                    setData(d);
+                }
+                setLoading(false);
+            })
+            .catch(() => {
+                setData(null);
+                setLoading(false);
+            });
     }, []);
 
     if (loading) {

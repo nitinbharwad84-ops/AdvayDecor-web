@@ -99,152 +99,217 @@ export default function AdminFaqQuestionsPage() {
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 className="text-2xl font-bold text-navy font-[family-name:var(--font-display)]">FAQ Questions</h1>
-                    <p className="text-text-muted text-sm mt-1">Manage and reply to user queries</p>
-                </div>
-                <div className="relative w-full sm:w-64 md:w-80">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Search questions..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 bg-white"
-                    />
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0a0a23', display: 'flex', alignItems: 'center', gap: '0.75rem', fontFamily: 'var(--font-display)' }}>
+                        <MessageCircle style={{ color: '#00b4d8' }} />
+                        FAQ Questions
+                    </h1>
+                    <p style={{ color: '#64648b', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                        Manage and reply to user queries
+                    </p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)] min-h-[600px]">
+            {/* Main Content Area */}
+            <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
                 {/* Questions List */}
-                <div className="lg:col-span-1 bg-white rounded-2xl border border-border overflow-hidden flex flex-col h-full">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Search */}
+                    <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
+                        <input
+                            type="text"
+                            placeholder="Search questions by name, email, or content..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{
+                                width: '100%', padding: '0.875rem 1rem 0.875rem 2.75rem',
+                                borderRadius: '0.75rem', border: '1px solid #e5e7eb',
+                                fontSize: '0.9rem', outline: 'none', background: '#fff'
+                            }}
+                        />
+                    </div>
+
+                    {/* Questions grid/list */}
                     {loading ? (
-                        <div className="flex-1 flex items-center justify-center p-8">
-                            <Loader2 className="animate-spin text-cyan" size={32} />
+                        <div style={{ textAlign: 'center', padding: '3rem', color: '#64648b', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <Loader2 size={32} className="animate-spin" style={{ color: '#00b4d8' }} />
                         </div>
-                    ) : questions.length === 0 ? (
-                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-cream-light/30">
-                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                                <Mail size={24} className="text-text-muted" />
-                            </div>
-                            <h3 className="font-semibold text-navy">No questions yet</h3>
-                            <p className="text-text-muted text-sm mt-1">When users ask questions, they will appear here.</p>
+                    ) : filteredQuestions.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '3rem', background: '#fff', borderRadius: '1rem', border: '1px solid #e5e7eb' }}>
+                            <Mail size={32} style={{ color: '#cbd5e1', margin: '0 auto 1rem' }} />
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>No questions yet</h3>
+                            <p style={{ color: '#64648b' }}>When users ask questions, they will appear here.</p>
                         </div>
                     ) : (
-                        <div className="flex-1 overflow-y-auto w-full">
-                            {filteredQuestions.map((question) => (
-                                <button
-                                    key={question.id}
-                                    onClick={() => markAsRead(question)}
-                                    className={`w-full text-left p-4 border-b border-border/50 transition-colors hover:bg-cream-light/50 ${selectedQuestion?.id === question.id ? 'bg-cream-light border-l-4 border-l-navy' : 'border-l-4 border-l-transparent'
-                                        }`}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {filteredQuestions.map((q) => (
+                                <motion.div
+                                    key={q.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onClick={() => markAsRead(q)}
+                                    style={{
+                                        background: selectedQuestion?.id === q.id ? '#f8fafc' : '#fff',
+                                        border: `1px solid ${selectedQuestion?.id === q.id ? '#00b4d8' : '#e5e7eb'}`,
+                                        borderRadius: '1rem', padding: '1.25rem', cursor: 'pointer',
+                                        transition: 'all 0.2s ease', position: 'relative'
+                                    }}
                                 >
-                                    <div className="flex justify-between items-start mb-1">
-                                        <h4 className="font-semibold text-navy truncate pr-2 flex items-center gap-2">
-                                            {question.name}
-                                            {question.status === 'new' && (
-                                                <span className="w-2 h-2 rounded-full bg-cyan block"></span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                        <h3 style={{ fontWeight: 600, color: '#0a0a23', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            {q.name}
+                                            {q.status === 'new' && (
+                                                <span style={{ width: '8px', height: '8px', background: '#00b4d8', borderRadius: '50%' }} />
                                             )}
-                                        </h4>
-                                        <span className="text-xs text-text-muted flex-shrink-0">
-                                            {new Date(question.created_at).toLocaleDateString()}
+                                        </h3>
+                                        <span style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>
+                                            {new Date(q.created_at).toLocaleDateString()}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-text-muted truncate mb-2">{question.question}</p>
-                                    <div className="flex justify-between items-center text-xs">
-                                        <span className={`px-2 py-0.5 rounded-full ${question.status === 'replied' ? 'bg-success/10 text-success' :
-                                            question.status === 'new' ? 'bg-cyan/10 text-cyan' :
-                                                'bg-gray-100 text-gray-600'
-                                            }`}>
-                                            {question.status.charAt(0).toUpperCase() + question.status.slice(1)}
+                                    <p style={{ fontSize: '0.9rem', color: '#334155', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                        {q.question}
+                                    </p>
+                                    <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{
+                                            fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '1rem',
+                                            background: q.status === 'replied' ? '#dcfce7' : q.status === 'new' ? '#e0f2fe' : '#f1f5f9',
+                                            color: q.status === 'replied' ? '#166534' : q.status === 'new' ? '#0369a1' : '#475569',
+                                        }}>
+                                            {q.status.toUpperCase()}
                                         </span>
                                     </div>
-                                </button>
+                                </motion.div>
                             ))}
                         </div>
                     )}
                 </div>
 
-                {/* Question Detail & Reply Panel */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-border overflow-hidden flex flex-col h-full relative">
-                    {selectedQuestion ? (
-                        <div className="flex flex-col h-full max-h-full">
-                            {/* Header */}
-                            <div className="p-6 border-b border-border bg-cream-light/30 flex-shrink-0">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-navy mb-1">{selectedQuestion.question}</h2>
-                                        <div className="flex items-center gap-4 text-sm text-text-muted">
-                                            <span className="flex items-center gap-1.5"><Mail size={14} /> {selectedQuestion.email}</span>
-                                            <span className="flex items-center gap-1.5"><Calendar size={14} /> {new Date(selectedQuestion.created_at).toLocaleString()}</span>
-                                        </div>
+                {/* Right Panel: Selected Question Details */}
+                <div style={{ width: '100%', maxWidth: '450px' }}>
+                    <AnimatePresence mode="wait">
+                        {selectedQuestion ? (
+                            <motion.div
+                                key="selected-question"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                style={{
+                                    background: '#fff', borderRadius: '1rem',
+                                    border: '1px solid #e5e7eb', overflow: 'hidden', position: 'sticky', top: '100px'
+                                }}
+                            >
+                                {/* Header */}
+                                <div style={{ padding: '1.25rem', borderBottom: '1px solid #f0ece4', background: '#f8fafc' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                        <h3 style={{ fontWeight: 600, color: '#0a0a23', fontSize: '1.1rem' }}>Question Details</h3>
+                                        <span style={{
+                                            fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.75rem', borderRadius: '1rem',
+                                            background: selectedQuestion.status === 'replied' ? '#dcfce7' : selectedQuestion.status === 'new' ? '#e0f2fe' : '#f1f5f9',
+                                            color: selectedQuestion.status === 'replied' ? '#166534' : selectedQuestion.status === 'new' ? '#0369a1' : '#475569',
+                                            border: `1px solid ${selectedQuestion.status === 'replied' ? '#bbf7d0' : selectedQuestion.status === 'new' ? '#bae6fd' : '#e2e8f0'}`,
+                                        }}>
+                                            {selectedQuestion.status.toUpperCase()}
+                                        </span>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${selectedQuestion.status === 'replied' ? 'bg-success/10 text-success border border-success/20' :
-                                        selectedQuestion.status === 'new' ? 'bg-cyan/10 text-cyan border border-cyan/20' :
-                                            'bg-gray-100 text-gray-600 border border-gray-200'
-                                        }`}>
-                                        {selectedQuestion.status.toUpperCase()}
-                                    </span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <p style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Mail size={14} /> <a href={`mailto:${selectedQuestion.email}`} style={{ color: '#00b4d8' }}>{selectedQuestion.email}</a>
+                                        </p>
+                                        <p style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Calendar size={14} /> {new Date(selectedQuestion.created_at).toLocaleString()}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="bg-white p-4 rounded-xl border border-border shadow-sm text-navy whitespace-pre-wrap text-sm">
-                                    {selectedQuestion.question}
-                                </div>
-                            </div>
 
-                            {/* Reply Area (Scrollable) */}
-                            <div className="p-6 flex-1 overflow-y-auto">
-                                {selectedQuestion.status === 'replied' ? (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 text-success font-medium mb-2 border-b border-border/50 pb-2">
-                                            <CheckCircle size={18} />
-                                            Admin Reply Sent
+                                {/* Content */}
+                                <div style={{ padding: '1.5rem', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '0.75rem', fontSize: '0.95rem', color: '#0a0a23', whiteSpace: 'pre-wrap', border: '1px solid #e5e7eb' }}>
+                                            {selectedQuestion.question}
                                         </div>
-                                        <div className="bg-cream-dark p-5 rounded-xl border border-border text-navy whitespace-pre-wrap text-sm relative">
-                                            <div className="absolute top-0 right-0 p-3 flex flex-col items-end gap-1">
-                                                <span className="text-xs text-text-muted opacity-70">Answered on</span>
-                                                <span className="text-xs font-medium text-navy/70">{new Date(selectedQuestion.answered_at).toLocaleDateString()}</span>
+                                    </div>
+
+                                    {selectedQuestion.status === 'replied' ? (
+                                        <div>
+                                            <p style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                <CheckCircle size={16} /> Admin Reply Sent
+                                            </p>
+                                            <div style={{ background: '#fdfbf7', padding: '1.25rem', borderRadius: '0.75rem', fontSize: '0.95rem', color: '#0a0a23', whiteSpace: 'pre-wrap', border: '1px solid #f0ece4', position: 'relative' }}>
+                                                <div style={{ position: 'absolute', top: '1rem', right: '1rem', textAlign: 'right' }}>
+                                                    <p style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Answered on</p>
+                                                    <p style={{ fontSize: '0.8rem', color: '#0a0a23', fontWeight: 500 }}>{new Date(selectedQuestion.answered_at).toLocaleDateString()}</p>
+                                                </div>
+                                                <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Your Answer:</p>
+                                                {selectedQuestion.answer_text}
                                             </div>
-                                            <span className="font-semibold block mb-2 opacity-60">Your Answer:</span>
-                                            {selectedQuestion.answer_text}
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="h-full flex flex-col">
-                                        <div className="flex items-center gap-2 text-navy font-medium mb-4">
-                                            <Reply size={18} />
-                                            Write an Answer
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                            <p style={{ fontSize: '0.85rem', color: '#0a0a23', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <Reply size={16} style={{ color: '#00b4d8' }} /> Write an Answer
+                                            </p>
+                                            <textarea
+                                                value={replyText}
+                                                onChange={(e) => setReplyText(e.target.value)}
+                                                placeholder="Type your answer here... This will be visible on the user's dashboard."
+                                                style={{
+                                                    width: '100%', minHeight: '180px', padding: '1rem',
+                                                    border: '1px solid #e5e7eb', borderRadius: '0.75rem',
+                                                    fontSize: '0.9rem', outline: 'none', resize: 'vertical',
+                                                    fontFamily: 'inherit', marginBottom: '1rem'
+                                                }}
+                                            />
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <button
+                                                    onClick={handleReply}
+                                                    disabled={isReplying || !replyText.trim()}
+                                                    style={{
+                                                        padding: '0.75rem 1.5rem', background: '#0a0a23', color: '#fff',
+                                                        border: 'none', borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.9rem',
+                                                        cursor: (isReplying || !replyText.trim()) ? 'not-allowed' : 'pointer',
+                                                        opacity: (isReplying || !replyText.trim()) ? 0.7 : 1,
+                                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                        transition: 'all 0.2s',
+                                                    }}
+                                                >
+                                                    {isReplying ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                                    {isReplying ? 'Sending...' : 'Send Answer'}
+                                                </button>
+                                            </div>
                                         </div>
-                                        <textarea
-                                            value={replyText}
-                                            onChange={(e) => setReplyText(e.target.value)}
-                                            placeholder="Type your answer here... This will be visible on the user's dashboard."
-                                            className="w-full flex-1 min-h-[200px] p-4 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 bg-white resize-none text-sm transition-all"
-                                        />
-                                        <div className="mt-4 flex justify-end">
-                                            <button
-                                                onClick={handleReply}
-                                                disabled={isReplying || !replyText.trim()}
-                                                className="bg-navy text-white px-6 py-2.5 rounded-xl font-medium hover:bg-navy-light disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-                                            >
-                                                {isReplying ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                                                {isReplying ? 'Sending...' : 'Send Answer'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-text-muted h-full">
-                            <div className="w-20 h-20 bg-cream-light rounded-full flex items-center justify-center mb-4">
-                                <MessageCircle size={32} className="text-border" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-navy mb-1">Select a question</h3>
-                            <p className="text-sm">Choose a question from the list to view details and answer.</p>
-                        </div>
-                    )}
+                                    )}
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="empty-state"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                style={{
+                                    height: '400px', display: 'flex', flexDirection: 'column',
+                                    alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+                                    padding: '2rem', background: '#f8fafc', borderRadius: '1rem',
+                                    border: '1px dashed #cbd5e1'
+                                }}
+                            >
+                                <div style={{
+                                    width: '64px', height: '64px', borderRadius: '50%', background: '#fff',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem',
+                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+                                }}>
+                                    <MessageCircle size={32} style={{ color: '#94a3b8' }} />
+                                </div>
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>Select a question</h3>
+                                <p style={{ color: '#64748b', fontSize: '0.9rem', maxWidth: '250px' }}>
+                                    Choose a question from the list to view details and answer.
+                                </p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </div>

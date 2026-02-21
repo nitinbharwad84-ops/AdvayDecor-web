@@ -4,9 +4,10 @@ import { cookies } from 'next/headers';
 
 export async function POST(
     request: Request,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await context.params;
         const body = await request.json();
         const { reply_text } = body;
 
@@ -52,7 +53,7 @@ export async function POST(
                 answer_text: reply_text,
                 answered_at: new Date().toISOString(),
             })
-            .eq('id', params.id)
+            .eq('id', id)
             .select()
             .single();
 
