@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useUserAuthStore } from '@/lib/auth-store';
 
 export default function ContactPage() {
     const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
     const [isLoading, setIsLoading] = useState(false);
+    const { user } = useUserAuthStore();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -16,7 +18,7 @@ export default function ContactPage() {
             const res = await fetch('/api/contact', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, user_id: user?.id || null }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to send message');
