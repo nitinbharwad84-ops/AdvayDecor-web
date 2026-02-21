@@ -12,10 +12,22 @@ export default function ContactPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        await new Promise((r) => setTimeout(r, 1500));
-        toast.success('Message sent! We\'ll get back to you within 24 hours.');
-        setFormData({ name: '', email: '', phone: '', message: '' });
-        setIsLoading(false);
+        try {
+            const res = await fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to send message');
+            toast.success('Message sent! We\'ll get back to you within 24 hours.');
+            setFormData({ name: '', email: '', phone: '', message: '' });
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || 'Error sending message. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const contactInfo = [

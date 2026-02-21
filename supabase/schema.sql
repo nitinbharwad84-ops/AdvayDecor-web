@@ -260,3 +260,32 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 -- -- Remove role column from profiles
 -- ALTER TABLE profiles DROP COLUMN IF EXISTS role;
 -- ============================================
+
+-- ============================================
+-- 12. CONTACT MESSAGES
+-- ============================================
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  message TEXT NOT NULL,
+  status TEXT DEFAULT 'new' CHECK (status IN ('new', 'read', 'replied')),
+  reply_text TEXT,
+  replied_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can insert contact messages" ON contact_messages;
+CREATE POLICY "Anyone can insert contact messages" ON contact_messages FOR INSERT WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "Users can view own messages" ON contact_messages;
+CREATE POLICY "Users can view own messages" ON contact_messages FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can manage messages" ON contact_messages;
+CREATE POLICY "Admins can manage messages" ON contact_messages FOR ALL USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_contact_messages_user ON contact_messages(user_id);
