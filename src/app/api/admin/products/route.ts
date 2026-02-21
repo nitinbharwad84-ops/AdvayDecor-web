@@ -102,7 +102,7 @@ export async function PUT(request: Request) {
         if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
         const body = await request.json();
-        const { id, title, slug, description, base_price, category, has_variants, is_active, variants } = body;
+        const { id, title, slug, description, base_price, category, has_variants, is_active, variants, images } = body;
 
         if (!id) return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
 
@@ -127,6 +127,20 @@ export async function PUT(request: Request) {
                     stock_quantity: v.stock_quantity || 0,
                 }));
                 await admin.from('product_variants').insert(variantRows);
+            }
+        }
+
+        // Sync images
+        if (images !== undefined) {
+            await admin.from('product_images').delete().eq('product_id', id);
+
+            if (images.length > 0) {
+                const imageRows = images.map((img: Record<string, unknown>, idx: number) => ({
+                    product_id: id,
+                    image_url: img.image_url,
+                    display_order: idx,
+                }));
+                await admin.from('product_images').insert(imageRows);
             }
         }
 

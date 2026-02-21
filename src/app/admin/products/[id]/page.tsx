@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Plus, Trash2, Upload, ImageIcon, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Upload, ImageIcon, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import type { Product } from '@/types';
@@ -39,6 +39,7 @@ export default function AdminProductEditPage() {
 
     const [variants, setVariants] = useState<{ id: string; variant_name: string; sku: string; price: string; stock_quantity: string }[]>([]);
     const [existingImages, setExistingImages] = useState<{ id: string; image_url: string }[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
 
     // Fetch existing product data
     useEffect(() => {
@@ -101,6 +102,7 @@ export default function AdminProductEditPage() {
                         stock_quantity: parseInt(v.stock_quantity) || 0,
                     }))
                     : [],
+                images: existingImages.map((img) => ({ image_url: img.image_url })),
             };
 
             const res = await fetch('/api/admin/products', {
@@ -150,6 +152,39 @@ export default function AdminProductEditPage() {
         setVariants(variants.filter(v => v.id !== id));
     };
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/admin/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                setExistingImages(prev => [...prev, { id: `new-${Date.now()}`, image_url: data.url }]);
+                toast.success('Image uploaded temporarily. Save product to apply changes.');
+            } else {
+                toast.error(data.error || 'Failed to upload image');
+            }
+        } catch {
+            toast.error('Failed to upload image');
+        } finally {
+            setIsUploading(false);
+            if (e.target) e.target.value = ''; // Reset input
+        }
+    };
+
+    const removeImage = (id: string) => {
+        setExistingImages(existingImages.filter(img => img.id !== id));
+    };
+
     if (loading) {
         return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
@@ -160,7 +195,7 @@ export default function AdminProductEditPage() {
     }
 
     return (
-        <div style={{ maxWidth: '1100px' }}>
+        <div style={{ width: '100%' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -233,16 +268,39 @@ export default function AdminProductEditPage() {
                     {/* Media */}
                     <div style={cardStyle}>
                         <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23', marginBottom: '1.25rem' }}>Media</h2>
-                        <div style={{ border: '2px dashed #d4d0c8', borderRadius: '0.75rem', padding: '2rem', textAlign: 'center', cursor: 'pointer' }}>
-                            <Upload size={32} style={{ margin: '0 auto', color: '#9e9eb8', marginBottom: '0.75rem' }} />
-                            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.25rem' }}>Drop images here or click to upload</p>
+                        <label style={{
+                            border: '2px dashed #d4d0c8', borderRadius: '0.75rem', padding: '2rem',
+                            textAlign: 'center', cursor: isUploading ? 'not-allowed' : 'pointer', display: 'block',
+                            background: isUploading ? '#f8fafc' : 'transparent', transition: 'background 0.2s',
+                            opacity: isUploading ? 0.7 : 1
+                        }}>
+                            <input type="file" accept="image/png, image/jpeg, image/webp" onChange={handleImageUpload} disabled={isUploading} style={{ display: 'none' }} />
+                            {isUploading ? (
+                                <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto', color: '#00b4d8', marginBottom: '0.75rem' }} />
+                            ) : (
+                                <Upload size={32} style={{ margin: '0 auto', color: '#9e9eb8', marginBottom: '0.75rem' }} />
+                            )}
+                            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.25rem' }}>
+                                {isUploading ? 'Uploading...' : 'Drop images here or click to upload'}
+                            </p>
                             <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>PNG, JPG, WEBP up to 5MB each</p>
-                        </div>
+                        </label>
                         {existingImages.length > 0 && (
                             <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
                                 {existingImages.map(img => (
-                                    <div key={img.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: '0.75rem', overflow: 'hidden', background: '#f5f0e8' }}>
+                                    <div key={img.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: '0.75rem', overflow: 'hidden', background: '#f5f0e8', border: '1px solid #e5e7eb' }}>
                                         <img src={img.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <button
+                                            onClick={(e) => { e.preventDefault(); removeImage(img.id); }}
+                                            style={{
+                                                position: 'absolute', top: '0.25rem', right: '0.25rem', width: '24px', height: '24px',
+                                                background: '#ef4444', color: '#fff', borderRadius: '50%', border: 'none',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                            }}
+                                        >
+                                            <X size={14} />
+                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -294,7 +352,7 @@ export default function AdminProductEditPage() {
                 </div>
 
                 {/* Sidebar */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', position: 'sticky', top: '100px' }}>
                     <div style={cardStyle}>
                         <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0a0a23', marginBottom: '1rem' }}>Product Status</h3>
                         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
@@ -329,8 +387,8 @@ export default function AdminProductEditPage() {
             </div>
 
             <style>{`
-                .admin-product-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
-                @media (min-width: 1024px) { .admin-product-grid { grid-template-columns: 2fr 1fr; } }
+                .admin-product-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: start; }
+                @media (min-width: 1024px) { .admin-product-grid { grid-template-columns: 1fr 320px; } }
                 .admin-variant-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
                 @media (min-width: 768px) { .admin-variant-grid { grid-template-columns: 1fr 1fr 1fr 1fr; } }
                 @keyframes spin { to { transform: rotate(360deg); } }
