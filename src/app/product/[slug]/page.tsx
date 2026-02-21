@@ -221,11 +221,13 @@ export default function ProductDetailPage() {
                             </div>
 
                             {/* Product Promises */}
-                            <div className="grid grid-cols-3" style={{
-                                gap: '0.75rem',
-                                padding: '1.25rem',
-                                borderRadius: '1rem',
-                                background: 'rgba(245,240,232,0.5)',
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gap: '1rem',
+                                padding: '2rem 1rem',
+                                borderRadius: '1.25rem',
+                                background: 'rgba(245,240,232,0.6)',
                                 border: '1px solid #f0ece4',
                             }}>
                                 {[
@@ -233,10 +235,16 @@ export default function ProductDetailPage() {
                                     { icon: RotateCcw, label: 'Easy Returns', sub: '5-Day Policy' },
                                     { icon: Shield, label: 'Secure Pay', sub: '100% Safe' },
                                 ].map((item) => (
-                                    <div key={item.label} style={{ textAlign: 'center' }}>
-                                        <item.icon size={20} style={{ color: '#00b4d8', margin: '0 auto 0.375rem' }} strokeWidth={1.5} />
-                                        <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#0a0a23' }}>{item.label}</p>
-                                        <p style={{ fontSize: '0.6rem', color: '#9e9eb8' }}>{item.sub}</p>
+                                    <div key={item.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                                        <div style={{
+                                            width: '48px', height: '48px', borderRadius: '50%', background: '#fff',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                                        }}>
+                                            <item.icon size={22} style={{ color: '#00b4d8' }} strokeWidth={1.5} />
+                                        </div>
+                                        <p style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0a0a23', marginBottom: '0.25rem' }}>{item.label}</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#64648b' }}>{item.sub}</p>
                                     </div>
                                 ))}
                             </div>
