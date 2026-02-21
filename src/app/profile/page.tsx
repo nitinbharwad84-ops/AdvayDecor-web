@@ -35,12 +35,22 @@ interface ContactMessage {
     created_at: string;
 }
 
+interface FaqQuestion {
+    id: string;
+    question: string;
+    status: string;
+    answer_text: string | null;
+    answered_at: string | null;
+    created_at: string;
+}
+
 export default function ProfilePage() {
     const router = useRouter();
     const { user, isAuthenticated, clearUser, setUser } = useUserAuthStore();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [messages, setMessages] = useState<ContactMessage[]>([]);
+    const [faqQuestions, setFaqQuestions] = useState<FaqQuestion[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
 
@@ -109,6 +119,19 @@ export default function ProfilePage() {
                     console.error('Error fetching messages:', messagesError);
                 } else {
                     setMessages(messagesData || []);
+                }
+
+                // 4. Fetch FAQ Questions
+                const { data: faqData, error: faqError } = await supabase
+                    .from('faq_questions')
+                    .select('*')
+                    .eq('user_id', user?.id)
+                    .order('created_at', { ascending: false });
+
+                if (faqError && faqError.code !== 'PGRST205') { // ignore table missing if not generated yet
+                    console.error('Error fetching faqs:', faqError);
+                } else {
+                    setFaqQuestions(faqData || []);
                 }
 
             } catch (error) {
@@ -472,6 +495,60 @@ export default function ProfilePage() {
                                                     <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginBottom: '0.25rem' }}>Advay Decor Support</p>
                                                     <p style={{ fontSize: '0.9rem', color: '#334155' }}>{msg.reply_text}</p>
                                                     <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>{new Date(msg.replied_at!).toLocaleString()}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </motion.div>
+
+                        {/* Customer FAQ Questions */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                        >
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1.5rem', marginTop: '2rem' }}>
+                                My FAQ Questions
+                            </h2>
+
+                            {faqQuestions.length === 0 ? (
+                                <div style={{
+                                    background: '#fff', borderRadius: '1.25rem', padding: '3rem',
+                                    textAlign: 'center', border: '1px solid #f0ece4'
+                                }}>
+                                    <MessageSquare size={32} style={{ color: '#cbd5e1', margin: '0 auto 1.5rem' }} />
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>No questions yet</h3>
+                                    <p style={{ color: '#64648b' }}>If you have product questions, ask them in the FAQ section.</p>
+                                    <Link href="/faq" style={{ display: 'inline-block', marginTop: '1.5rem', padding: '0.75rem 1.5rem', borderRadius: '2rem', background: '#0a0a23', color: '#fff', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}>
+                                        View FAQs
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {faqQuestions.map((q) => (
+                                        <div key={q.id} style={{
+                                            background: '#fff', borderRadius: '1rem', padding: '1.5rem',
+                                            border: '1px solid #f0ece4'
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{new Date(q.created_at).toLocaleString()}</span>
+                                                <span style={{
+                                                    fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '1rem',
+                                                    background: q.status === 'replied' ? '#dcfce7' : '#fef9c3',
+                                                    color: q.status === 'replied' ? '#166534' : '#854d0e'
+                                                }}>
+                                                    {q.status.toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <p style={{ fontSize: '0.95rem', color: '#0a0a23', marginBottom: q.answer_text ? '1rem' : '0' }}>{q.question}</p>
+
+                                            {q.answer_text && (
+                                                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '0.75rem', marginTop: '1rem', borderLeft: '3px solid #00b4d8' }}>
+                                                    <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginBottom: '0.25rem' }}>Advay Decor Answer</p>
+                                                    <p style={{ fontSize: '0.9rem', color: '#334155' }}>{q.answer_text}</p>
+                                                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>{new Date(q.answered_at!).toLocaleString()}</p>
                                                 </div>
                                             )}
                                         </div>

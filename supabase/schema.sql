@@ -287,5 +287,32 @@ CREATE POLICY "Users can view own messages" ON contact_messages FOR SELECT USING
 
 DROP POLICY IF EXISTS "Admins can manage messages" ON contact_messages;
 CREATE POLICY "Admins can manage messages" ON contact_messages FOR ALL USING (public.is_admin());
-
 CREATE INDEX IF NOT EXISTS idx_contact_messages_user ON contact_messages(user_id);
+
+-- ============================================
+-- 13. FAQ QUESTIONS
+-- ============================================
+CREATE TABLE IF NOT EXISTS faq_questions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  question TEXT NOT NULL,
+  status TEXT DEFAULT 'new' CHECK (status IN ('new', 'read', 'replied')),
+  answer_text TEXT,
+  answered_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE faq_questions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can insert faq questions" ON faq_questions;
+CREATE POLICY "Anyone can insert faq questions" ON faq_questions FOR INSERT WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "Users can view own faq questions" ON faq_questions;
+CREATE POLICY "Users can view own faq questions" ON faq_questions FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can manage faq questions" ON faq_questions;
+CREATE POLICY "Admins can manage faq questions" ON faq_questions FOR ALL USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_faq_questions_user ON faq_questions(user_id);
