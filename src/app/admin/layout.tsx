@@ -16,6 +16,7 @@ import {
     LogOut,
     MessageSquare,
     HelpCircle,
+    Tag,
 } from 'lucide-react';
 import { useAdminAuthStore } from '@/lib/auth-store';
 import { createClient } from '@/lib/supabase';
@@ -26,6 +27,7 @@ const sidebarLinks = [
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Messages', href: '/admin/messages', icon: MessageSquare },
     { name: 'FAQ Questions', href: '/admin/faq-questions', icon: HelpCircle },
+    { name: 'Coupons', href: '/admin/coupons', icon: Tag },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 

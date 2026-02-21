@@ -316,3 +316,26 @@ DROP POLICY IF EXISTS "Admins can manage faq questions" ON faq_questions;
 CREATE POLICY "Admins can manage faq questions" ON faq_questions FOR ALL USING (public.is_admin());
 
 CREATE INDEX IF NOT EXISTS idx_faq_questions_user ON faq_questions(user_id);
+
+-- ============================================
+-- 14. COUPONS
+-- ============================================
+CREATE TABLE IF NOT EXISTS coupons (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  code TEXT UNIQUE NOT NULL,
+  discount_type TEXT NOT NULL CHECK (discount_type IN ('flat', 'percentage')),
+  discount_value DECIMAL(10,2) NOT NULL,
+  min_order_amount DECIMAL(10,2) DEFAULT 0,
+  max_discount_amount DECIMAL(10,2),
+  is_active BOOLEAN DEFAULT TRUE,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can read active coupons" ON coupons;
+CREATE POLICY "Anyone can read active coupons" ON coupons FOR SELECT USING (is_active = TRUE);
+
+DROP POLICY IF EXISTS "Admins can manage coupons" ON coupons;
+CREATE POLICY "Admins can manage coupons" ON coupons FOR ALL USING (public.is_admin());
