@@ -41,6 +41,7 @@ export default function AdminProductEditPage() {
     const [existingImages, setExistingImages] = useState<{ id: string; image_url: string }[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
 
     // Fetch existing product data
     useEffect(() => {
@@ -226,6 +227,27 @@ export default function AdminProductEditPage() {
         setExistingImages(existingImages.filter(img => img.id !== id));
     };
 
+    const onImageDragStart = (index: number) => {
+        setDraggedImageIndex(index);
+    };
+
+    const onImageDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        if (draggedImageIndex === null || draggedImageIndex === index) return;
+
+        const newImages = [...existingImages];
+        const draggedItem = newImages[draggedImageIndex];
+        newImages.splice(draggedImageIndex, 1);
+        newImages.splice(index, 0, draggedItem);
+
+        setDraggedImageIndex(index);
+        setExistingImages(newImages);
+    };
+
+    const onImageDragEnd = () => {
+        setDraggedImageIndex(null);
+    };
+
     if (loading) {
         return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
@@ -338,21 +360,46 @@ export default function AdminProductEditPage() {
                             <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>PNG, JPG, WEBP up to 5MB each</p>
                         </label>
                         {existingImages.length > 0 && (
-                            <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
-                                {existingImages.map(img => (
-                                    <div key={img.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: '0.75rem', overflow: 'hidden', background: '#f5f0e8', border: '1px solid #e5e7eb' }}>
-                                        <img src={img.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.75rem' }}>
+                                {existingImages.map((img, idx) => (
+                                    <div
+                                        key={img.id}
+                                        draggable
+                                        onDragStart={() => onImageDragStart(idx)}
+                                        onDragOver={(e) => onImageDragOver(e, idx)}
+                                        onDragEnd={onImageDragEnd}
+                                        style={{
+                                            position: 'relative',
+                                            aspectRatio: '1',
+                                            borderRadius: '0.75rem',
+                                            overflow: 'hidden',
+                                            background: '#f5f0e8',
+                                            border: '1px solid #e5e7eb',
+                                            cursor: 'move',
+                                            opacity: draggedImageIndex === idx ? 0.5 : 1,
+                                            transition: 'transform 0.2s, opacity 0.2s'
+                                        }}
+                                    >
+                                        <img src={img.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
                                         <button
-                                            onClick={(e) => { e.preventDefault(); removeImage(img.id); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeImage(img.id); }}
                                             style={{
                                                 position: 'absolute', top: '0.25rem', right: '0.25rem', width: '24px', height: '24px',
                                                 background: '#ef4444', color: '#fff', borderRadius: '50%', border: 'none',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                                zIndex: 10
                                             }}
                                         >
                                             <X size={14} />
                                         </button>
+                                        <div style={{
+                                            position: 'absolute', bottom: '0.25rem', left: '0.25rem',
+                                            background: 'rgba(0,0,0,0.5)', color: '#fff',
+                                            fontSize: '10px', padding: '2px 6px', borderRadius: '4px'
+                                        }}>
+                                            {idx + 1}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
