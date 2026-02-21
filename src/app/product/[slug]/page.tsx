@@ -219,36 +219,37 @@ export default function ProductDetailPage() {
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <PincodeChecker />
                             </div>
-
-                            {/* Product Promises */}
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(3, 1fr)',
-                                gap: '1rem',
-                                padding: '2rem 1rem',
-                                borderRadius: '1.25rem',
-                                background: 'rgba(245,240,232,0.6)',
-                                border: '1px solid #f0ece4',
-                            }}>
-                                {[
-                                    { icon: Truck, label: 'Free Shipping', sub: 'Above ₹999' },
-                                    { icon: RotateCcw, label: 'Easy Returns', sub: '5-Day Policy' },
-                                    { icon: Shield, label: 'Secure Pay', sub: '100% Safe' },
-                                ].map((item) => (
-                                    <div key={item.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                                        <div style={{
-                                            width: '48px', height: '48px', borderRadius: '50%', background: '#fff',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem',
-                                            boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
-                                        }}>
-                                            <item.icon size={22} style={{ color: '#00b4d8' }} strokeWidth={1.5} />
-                                        </div>
-                                        <p style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0a0a23', marginBottom: '0.25rem' }}>{item.label}</p>
-                                        <p style={{ fontSize: '0.75rem', color: '#64648b' }}>{item.sub}</p>
-                                    </div>
-                                ))}
-                            </div>
                         </motion.div>
+                    </div>
+
+                    {/* Product Promises (Full Width) */}
+                    <div style={{
+                        marginTop: '4rem',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '2rem',
+                        padding: '3rem 2rem',
+                        borderRadius: '1.5rem',
+                        background: 'linear-gradient(135deg, rgba(245,240,232,0.6) 0%, rgba(245,240,232,0.2) 100%)',
+                        border: '1px solid #e8e4dc',
+                    }}>
+                        {[
+                            { icon: Truck, label: 'Free Shipping', sub: 'Above ₹999' },
+                            { icon: RotateCcw, label: 'Easy Returns', sub: '5-Day Policy' },
+                            { icon: Shield, label: 'Secure Pay', sub: '100% Safe' },
+                        ].map((item) => (
+                            <div key={item.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                                <div style={{
+                                    width: '64px', height: '64px', borderRadius: '50%', background: '#fff',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.04)'
+                                }}>
+                                    <item.icon size={28} style={{ color: '#00b4d8' }} strokeWidth={1.5} />
+                                </div>
+                                <p style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0a0a23', marginBottom: '0.35rem' }}>{item.label}</p>
+                                <p style={{ fontSize: '0.9rem', color: '#64748b' }}>{item.sub}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
