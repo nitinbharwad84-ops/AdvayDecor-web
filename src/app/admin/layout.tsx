@@ -15,7 +15,6 @@ import {
     ChevronRight,
     LogOut,
     MessageSquare,
-    FileText,
 } from 'lucide-react';
 import { useAdminAuthStore } from '@/lib/auth-store';
 import { createClient } from '@/lib/supabase';
@@ -25,7 +24,6 @@ const sidebarLinks = [
     { name: 'Products', href: '/admin/products', icon: Package },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Messages', href: '/admin/messages', icon: MessageSquare },
-    { name: 'Pages', href: '/admin/pages', icon: FileText },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
