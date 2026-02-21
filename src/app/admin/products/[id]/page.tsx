@@ -40,6 +40,7 @@ export default function AdminProductEditPage() {
     const [variants, setVariants] = useState<{ id: string; variant_name: string; sku: string; price: string; stock_quantity: string }[]>([]);
     const [existingImages, setExistingImages] = useState<{ id: string; image_url: string }[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
 
     // Fetch existing product data
     useEffect(() => {
@@ -152,9 +153,19 @@ export default function AdminProductEditPage() {
         setVariants(variants.filter(v => v.id !== id));
     };
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+    const uploadFile = async (file: File) => {
         if (!file) return;
+
+        // Basic client-side validation
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            toast.error('Invalid file type. Only JPG, PNG, and WEBP are allowed.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('File size exceeds 5MB limit');
+            return;
+        }
 
         setIsUploading(true);
         const formData = new FormData();
@@ -177,7 +188,37 @@ export default function AdminProductEditPage() {
             toast.error('Failed to upload image');
         } finally {
             setIsUploading(false);
-            if (e.target) e.target.value = ''; // Reset input
+        }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            await uploadFile(file);
+            e.target.value = ''; // Reset input
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            await uploadFile(file);
         }
     };
 
@@ -268,12 +309,23 @@ export default function AdminProductEditPage() {
                     {/* Media */}
                     <div style={cardStyle}>
                         <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23', marginBottom: '1.25rem' }}>Media</h2>
-                        <label style={{
-                            border: '2px dashed #d4d0c8', borderRadius: '0.75rem', padding: '2rem',
-                            textAlign: 'center', cursor: isUploading ? 'not-allowed' : 'pointer', display: 'block',
-                            background: isUploading ? '#f8fafc' : 'transparent', transition: 'background 0.2s',
-                            opacity: isUploading ? 0.7 : 1
-                        }}>
+                        <label
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            style={{
+                                border: `2px dashed ${isDragging ? '#00b4d8' : '#d4d0c8'}`,
+                                borderRadius: '0.75rem',
+                                padding: '2rem',
+                                textAlign: 'center',
+                                cursor: isUploading ? 'not-allowed' : 'pointer',
+                                display: 'block',
+                                background: isUploading || isDragging ? '#f8fafc' : 'transparent',
+                                transition: 'all 0.2s',
+                                opacity: isUploading ? 0.7 : 1,
+                                transform: isDragging ? 'scale(1.01)' : 'scale(1)',
+                            }}
+                        >
                             <input type="file" accept="image/png, image/jpeg, image/webp" onChange={handleImageUpload} disabled={isUploading} style={{ display: 'none' }} />
                             {isUploading ? (
                                 <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto', color: '#00b4d8', marginBottom: '0.75rem' }} />
