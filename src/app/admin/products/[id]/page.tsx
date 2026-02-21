@@ -260,7 +260,7 @@ export default function AdminProductEditPage() {
     return (
         <div style={{ width: '100%' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Link href="/admin/products" style={{ padding: '0.5rem', borderRadius: '0.75rem', border: '1px solid #e8e4dc', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: '#0a0a23' }}>
                         <ArrowLeft size={18} />
@@ -274,23 +274,72 @@ export default function AdminProductEditPage() {
                         </p>
                     </div>
                 </div>
-                <motion.button
-                    onClick={handleSave}
-                    disabled={saving}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        padding: '0.625rem 1.25rem', background: '#00b4d8', color: '#fff',
-                        borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.875rem',
-                        border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-                        boxShadow: '0 2px 8px rgba(0,180,216,0.25)',
-                        opacity: saving ? 0.7 : 1,
-                    }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                >
-                    {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
-                    {saving ? 'Saving...' : 'Save Product'}
-                </motion.button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    {/* Status Toggle */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        padding: '0.5rem 1rem', background: '#fff',
+                        border: '1px solid #e8e4dc', borderRadius: '0.75rem',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                    }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64648b' }}>Status:</span>
+                        <div
+                            style={{
+                                position: 'relative', width: '40px', height: '22px',
+                                borderRadius: '11px', background: form.is_active ? '#00b4d8' : '#e8e4dc',
+                                cursor: 'pointer', transition: 'background 0.2s'
+                            }}
+                            onClick={() => setForm({ ...form, is_active: !form.is_active })}
+                        >
+                            <div style={{
+                                position: 'absolute', top: '2px', left: form.is_active ? '20px' : '2px',
+                                width: '18px', height: '18px', borderRadius: '50%',
+                                background: '#fff', transition: 'left 0.2s',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                            }} />
+                        </div>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: form.is_active ? '#00b4d8' : '#9e9eb8', minWidth: '50px' }}>
+                            {form.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+
+                    {/* Delete Button */}
+                    {!isNew && (
+                        <button
+                            onClick={handleDelete}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                padding: '0.625rem 1rem', color: '#ef4444',
+                                background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)',
+                                borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'}
+                        >
+                            <Trash2 size={16} /> Delete
+                        </button>
+                    )}
+
+                    <motion.button
+                        onClick={handleSave}
+                        disabled={saving}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            padding: '0.625rem 1.25rem', background: '#00b4d8', color: '#fff',
+                            borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.875rem',
+                            border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+                            boxShadow: '0 2px 8px rgba(0,180,216,0.25)',
+                            opacity: saving ? 0.7 : 1,
+                        }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
+                        {saving ? 'Saving...' : 'Save Product'}
+                    </motion.button>
+                </div>
             </div>
 
             <div className="admin-product-grid">
@@ -337,8 +386,8 @@ export default function AdminProductEditPage() {
                             onDrop={handleDrop}
                             style={{
                                 border: `2px dashed ${isDragging ? '#00b4d8' : '#d4d0c8'}`,
-                                borderRadius: '0.75rem',
-                                padding: '2rem',
+                                borderRadius: '1rem',
+                                padding: '4rem 2rem',
                                 textAlign: 'center',
                                 cursor: isUploading ? 'not-allowed' : 'pointer',
                                 display: 'block',
@@ -350,17 +399,17 @@ export default function AdminProductEditPage() {
                         >
                             <input type="file" accept="image/png, image/jpeg, image/webp" onChange={handleImageUpload} disabled={isUploading} style={{ display: 'none' }} />
                             {isUploading ? (
-                                <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto', color: '#00b4d8', marginBottom: '0.75rem' }} />
+                                <Loader2 size={48} className="animate-spin" style={{ margin: '0 auto', color: '#00b4d8', marginBottom: '1rem' }} />
                             ) : (
-                                <Upload size={32} style={{ margin: '0 auto', color: '#9e9eb8', marginBottom: '0.75rem' }} />
+                                <Upload size={48} style={{ margin: '0 auto', color: '#9e9eb8', marginBottom: '1rem' }} />
                             )}
-                            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.25rem' }}>
+                            <p style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>
                                 {isUploading ? 'Uploading...' : 'Drop images here or click to upload'}
                             </p>
-                            <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>PNG, JPG, WEBP up to 5MB each</p>
+                            <p style={{ fontSize: '0.875rem', color: '#9e9eb8' }}>PNG, JPG, WEBP up to 5MB each</p>
                         </label>
                         {existingImages.length > 0 && (
-                            <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.75rem' }}>
+                            <div style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
                                 {existingImages.map((img, idx) => (
                                     <div
                                         key={img.id}
@@ -449,45 +498,10 @@ export default function AdminProductEditPage() {
                         )}
                     </div>
                 </div>
-
-                {/* Sidebar */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', position: 'sticky', top: '100px' }}>
-                    <div style={cardStyle}>
-                        <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0a0a23', marginBottom: '1rem' }}>Product Status</h3>
-                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                            <span style={{ fontSize: '0.875rem', color: '#64648b' }}>Active</span>
-                            <div style={{ position: 'relative' }}>
-                                <div style={{
-                                    width: '44px', height: '24px', borderRadius: '12px',
-                                    background: form.is_active ? '#00b4d8' : '#e8e4dc',
-                                    transition: 'background 0.2s ease', position: 'relative', cursor: 'pointer',
-                                }} onClick={() => setForm({ ...form, is_active: !form.is_active })}>
-                                    <div style={{
-                                        position: 'absolute', top: '2px', left: form.is_active ? '22px' : '2px',
-                                        width: '20px', height: '20px', borderRadius: '50%',
-                                        background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'left 0.2s ease',
-                                    }} />
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-
-                    {!isNew && (
-                        <div style={cardStyle}>
-                            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0a0a23', marginBottom: '1rem' }}>Quick Actions</h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                <button onClick={handleDelete} style={{ width: '100%', textAlign: 'left', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '0.875rem', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                    Delete Product
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
             </div>
 
             <style>{`
-                .admin-product-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: start; }
-                @media (min-width: 1024px) { .admin-product-grid { grid-template-columns: 1fr 320px; } }
+                .admin-product-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: start; max-width: 100%; }
                 .admin-variant-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
                 @media (min-width: 768px) { .admin-variant-grid { grid-template-columns: 1fr 1fr 1fr 1fr; } }
                 @keyframes spin { to { transform: rotate(360deg); } }
