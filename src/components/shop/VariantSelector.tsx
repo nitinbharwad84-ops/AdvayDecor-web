@@ -13,16 +13,16 @@ export default function VariantSelector({ variants, selectedVariant, onSelect }:
     if (variants.length === 0) return null;
 
     return (
-        <div>
-            <label className="block text-sm font-medium text-navy mb-3">
+        <div style={{ width: '100%' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.75rem' }}>
                 Select Variant
                 {selectedVariant && (
-                    <span className="text-text-muted font-normal ml-2">
+                    <span style={{ fontWeight: 400, color: '#64748b', marginLeft: '0.5rem' }}>
                         — {selectedVariant.variant_name}
                     </span>
                 )}
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {variants.map((variant) => {
                     const isSelected = selectedVariant?.id === variant.id;
                     const isOutOfStock = variant.stock_quantity <= 0;
@@ -32,22 +32,32 @@ export default function VariantSelector({ variants, selectedVariant, onSelect }:
                             key={variant.id}
                             onClick={() => !isOutOfStock && onSelect(variant)}
                             disabled={isOutOfStock}
-                            className={`
-                relative px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 border-2
-                ${isSelected
-                                    ? 'bg-navy text-white border-navy shadow-md'
-                                    : isOutOfStock
-                                        ? 'bg-cream-dark text-text-muted border-border cursor-not-allowed opacity-50 line-through'
-                                        : 'bg-white text-navy border-border hover:border-navy/30 hover:shadow-sm'
-                                }
-              `}
-                            whileHover={!isOutOfStock ? { scale: 1.03 } : undefined}
+                            style={{
+                                position: 'relative',
+                                padding: '0.5rem 1.25rem',
+                                borderRadius: '0.75rem',
+                                fontSize: '0.875rem',
+                                fontWeight: 500,
+                                border: `2px solid ${isSelected ? '#0a0a23' : isOutOfStock ? '#e5e7eb' : '#e5e7eb'}`,
+                                background: isSelected ? '#0a0a23' : isOutOfStock ? '#f8fafc' : '#fff',
+                                color: isSelected ? '#fff' : isOutOfStock ? '#94a3b8' : '#0a0a23',
+                                cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+                                opacity: isOutOfStock ? 0.6 : 1,
+                                textDecoration: isOutOfStock ? 'line-through' : 'none',
+                                transition: 'all 0.2s ease',
+                                outline: 'none',
+                            }}
+                            whileHover={!isOutOfStock && !isSelected ? { borderColor: '#cbd5e1' } : undefined}
                             whileTap={!isOutOfStock ? { scale: 0.97 } : undefined}
                         >
                             {variant.variant_name}
                             {isSelected && (
                                 <motion.div
-                                    className="absolute -top-1 -right-1 w-4 h-4 bg-cyan rounded-full flex items-center justify-center"
+                                    style={{
+                                        position: 'absolute', top: '-0.3rem', right: '-0.3rem', width: '1rem', height: '1rem',
+                                        background: '#00b4d8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        boxShadow: '0 0 0 2px #fff'
+                                    }}
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                     transition={{ type: 'spring', stiffness: 500 }}

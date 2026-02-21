@@ -20,13 +20,13 @@ export default function PincodeChecker() {
     };
 
     return (
-        <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-navy">
-                <MapPin size={16} className="text-cyan" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#0a0a23' }}>
+                <MapPin size={16} style={{ color: '#00b4d8' }} />
                 Check Delivery
             </div>
-            <div className="flex gap-2">
-                <div className="relative flex-1">
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
                     <input
                         type="text"
                         value={pincode}
@@ -36,13 +36,36 @@ export default function PincodeChecker() {
                             setResult(null);
                         }}
                         placeholder="Enter pincode"
-                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-sm text-navy placeholder:text-text-muted focus:outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/10 transition-all"
+                        style={{
+                            width: '100%',
+                            padding: '0.625rem 1rem',
+                            borderRadius: '0.75rem',
+                            border: '1px solid #e5e7eb',
+                            background: '#fff',
+                            fontSize: '0.875rem',
+                            color: '#0a0a23',
+                            outline: 'none',
+                            transition: 'all 0.2s',
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#00b4d8'}
+                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                     />
                 </div>
                 <button
                     onClick={handleCheck}
                     disabled={pincode.length !== 6 || isChecking}
-                    className="px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-medium hover:bg-navy-light disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300"
+                    style={{
+                        padding: '0.625rem 1.25rem',
+                        background: '#0a0a23',
+                        color: '#fff',
+                        borderRadius: '0.75rem',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: pincode.length !== 6 || isChecking ? 'not-allowed' : 'pointer',
+                        opacity: pincode.length !== 6 || isChecking ? 0.5 : 1,
+                        transition: 'all 0.2s',
+                    }}
                 >
                     {isChecking ? 'Checking...' : 'Check'}
                 </button>
@@ -53,12 +76,12 @@ export default function PincodeChecker() {
                         initial={{ opacity: 0, y: -10, height: 0 }}
                         animate={{ opacity: 1, y: 0, height: 'auto' }}
                         exit={{ opacity: 0, y: -10, height: 0 }}
-                        className="flex items-start gap-2 text-sm text-success"
+                        style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.875rem', color: '#10b981', overflow: 'hidden' }}
                     >
-                        <CheckCircle size={16} className="mt-0.5 flex-shrink-0" />
+                        <CheckCircle size={16} style={{ marginTop: '0.125rem', flexShrink: 0 }} />
                         <div>
-                            <p className="font-medium">{result}</p>
-                            <div className="flex items-center gap-1 text-xs text-text-muted mt-1">
+                            <p style={{ fontWeight: 500 }}>{result}</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
                                 <Truck size={12} />
                                 Free shipping on orders above ₹999
                             </div>
