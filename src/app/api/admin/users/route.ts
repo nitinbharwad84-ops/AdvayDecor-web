@@ -83,3 +83,38 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export async function PUT(request: Request) {
+    try {
+        const { id, full_name, phone } = await request.json();
+
+        if (!id) {
+            return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+        }
+
+        const admin = createAdminClient();
+
+        // 1. Update auth.users metadata
+        const { error: authError } = await admin.auth.admin.updateUserById(id, {
+            user_metadata: { full_name, phone },
+        });
+
+        if (authError) throw authError;
+
+        // 2. Update profiles table
+        const { error: profileError } = await admin
+            .from('profiles')
+            .update({
+                full_name,
+                phone: phone || null
+            })
+            .eq('id', id);
+
+        if (profileError) throw profileError;
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error('Error updating user:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { sendSMS } from '@/lib/sms';
 
 export async function POST(request: Request) {
     try {
@@ -43,59 +42,11 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // 2. Generate and save internal 6-digit OTP (Fallback/Testing)
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-        await admin
-            .from('phone_verification_otps')
-            .delete()
-            .eq('phone', cleanPhone);
-
-        const { error: insertError } = await admin
-            .from('phone_verification_otps')
-            .insert({
-                phone: cleanPhone,
-                otp,
-                expires_at: expiresAt
-            });
-
-        if (insertError) {
-            console.error('Error saving Phone OTP:', insertError);
-            return NextResponse.json({ error: 'Failed to generate verification code' }, { status: 500 });
-        }
-
-        if (checkOnly) {
-            return NextResponse.json({
-                success: true,
-                message: 'Phone number is available',
-                internalOtp: otp // Provide for frontend fallback
-            });
-        }
-
-        // 3. Optional: Send SMS via Twilio if configured
-        const smsResult = await sendSMS({
-            to: cleanPhone,
-            message: `${otp} is your AdvayDecor verification code. Valid for 10 minutes.`
-        });
-
-        if (smsResult.success) {
-            return NextResponse.json({
-                success: true,
-                message: `Verification code sent to ${cleanPhone}.`
-            });
-        }
-
-        // 4. Default Fallback
-        console.log('------------------------------------------');
-        console.log(`DEV OTP FOR ${cleanPhone}: ${otp}`);
-        console.log('------------------------------------------');
-
+        // If checkOnly is specified we just return success
+        // otherwise this endpoint behaves exactly the same
         return NextResponse.json({
             success: true,
-            testingMode: true,
-            internalOtp: otp,
-            message: `Testing Mode: Code logged to terminal.`
+            message: 'Phone number is available'
         });
 
     } catch (err: any) {
