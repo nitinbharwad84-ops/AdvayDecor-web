@@ -21,18 +21,8 @@ export async function POST(request: Request) {
 
         const admin = createAdminClient();
 
-        // 1. Verify OTP
-        const { data: otpData, error: otpError } = await admin
-            .from('phone_verification_otps')
-            .select('*')
-            .eq('phone', cleanPhone)
-            .eq('otp', otp)
-            .gt('expires_at', new Date().toISOString())
-            .single();
-
-        if (otpError || !otpData) {
-            return NextResponse.json({ error: 'Invalid or expired verification code' }, { status: 400 });
-        }
+        // 1. Skip OTP Verification (Removed as per request)
+        // We just proceed to the update phase
 
         // 2. Double check uniqueness one last time
         const { data: existingProfile } = await admin
@@ -57,11 +47,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to update phone number' }, { status: 500 });
         }
 
-        // 4. Clean up OTP
-        await admin
-            .from('phone_verification_otps')
-            .delete()
-            .eq('id', otpData.id);
+        // 4. Clean up (Optional, we can just let it expire or not save it at all)
 
         return NextResponse.json({
             success: true,

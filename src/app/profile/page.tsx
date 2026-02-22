@@ -5,11 +5,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Package, ArrowRight, LogOut, Clock, PenLine, Save, X, Phone, MessageSquare, HelpCircle, ChevronRight, RefreshCw } from 'lucide-react';
+import { User, Mail, Package, ArrowRight, LogOut, Clock, PenLine, Save, X, Phone, MessageSquare, HelpCircle, ChevronRight, RefreshCw, MapPin, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase';
 import { useUserAuthStore } from '@/lib/auth-store';
 import { formatCurrency } from '@/lib/utils';
+
 
 interface Order {
     id: string;
@@ -24,6 +25,18 @@ interface UserProfile {
     email: string;
     full_name: string | null;
     phone: string | null;
+}
+
+interface Address {
+    id: string;
+    full_name: string;
+    phone: string;
+    street_address: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+    is_default: boolean;
 }
 
 interface ContactMessage {
@@ -54,6 +67,14 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
 
+    // Address state
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+    const [editingAddress, setEditingAddress] = useState<Partial<Address>>({});
+    const [isAddressSaving, setIsAddressSaving] = useState(false);
+
+
+
     // Email change state
     const [isChangingEmail, setIsChangingEmail] = useState(false);
     const [changeEmailStep, setChangeEmailStep] = useState<'verify_old' | 'enter_new' | 'verify_new'>('verify_old');
@@ -63,9 +84,7 @@ export default function ProfilePage() {
 
     // Phone change state
     const [isChangingPhone, setIsChangingPhone] = useState(false);
-    const [changePhoneStep, setChangePhoneStep] = useState<'enter_phone' | 'verify_otp'>('enter_phone');
     const [newPhoneInput, setNewPhoneInput] = useState('');
-    const [phoneOtp, setPhoneOtp] = useState('');
     const [isPhoneLoading, setIsPhoneLoading] = useState(false);
 
     // Edit form state
@@ -75,6 +94,7 @@ export default function ProfilePage() {
 
     const tabs = [
         { id: 'profile', name: 'Profile Details', icon: User },
+        { id: 'addresses', name: 'Saved Addresses', icon: MapPin },
         { id: 'orders', name: 'Order History', icon: Package },
         { id: 'support', name: 'Support Messages', icon: MessageSquare },
         { id: 'faq', name: 'My FAQ Questions', icon: HelpCircle },
@@ -156,6 +176,20 @@ export default function ProfilePage() {
                     setFaqQuestions(faqData || []);
                 }
 
+                // 5. Fetch Addresses
+                const { data: addressData, error: addressError } = await supabase
+                    .from('user_addresses')
+                    .select('*')
+                    .eq('user_id', user?.id)
+                    .order('is_default', { ascending: false })
+                    .order('created_at', { ascending: false });
+
+                if (addressError && addressError.code !== 'PGRST205') {
+                    console.error('Error fetching addresses:', addressError);
+                } else {
+                    setAddresses(addressData || []);
+                }
+
             } catch (error) {
                 console.error('Error loading profile:', error);
                 toast.error('Failed to load profile data');
@@ -193,7 +227,7 @@ export default function ProfilePage() {
             const data = await res.json();
             if (data.error) throw new Error(data.error);
 
-            setProfile(prev => prev ? { ...prev, full_name: editName, phone: editPhone } : null);
+            setProfile((prev: UserProfile | null) => prev ? { ...prev, full_name: editName, phone: editPhone } : null);
             setIsEditing(false);
             toast.success('Profile updated successfully');
 
@@ -299,7 +333,7 @@ export default function ProfilePage() {
             toast.success('Email updated successfully!');
 
             // Refresh local state
-            setProfile(prev => prev ? { ...prev, email: newEmailInput.toLowerCase() } : null);
+            setProfile((prev: UserProfile | null) => prev ? { ...prev, email: newEmailInput.toLowerCase() } : null);
             if (user) {
                 setUser({ ...user, email: newEmailInput.toLowerCase() });
             }
@@ -316,65 +350,138 @@ export default function ProfilePage() {
         }
     };
 
-    // Phone Change Handlers
-    const handleSendPhoneOtp = async () => {
+    // Phone Change Handler (Direct Update)
+    const handleDirectPhoneUpdate = async () => {
         if (!newPhoneInput || newPhoneInput.length < 10) {
-            toast.error('Please enter a valid phone number');
+            toast.error('Please enter a valid phone number (including country code)');
             return;
         }
 
         setIsPhoneLoading(true);
         try {
-            const res = await fetch('/api/auth/otp/send-phone-otp', {
+            // 1. Check uniqueness and generate internal OTP
+            const checkRes = await fetch('/api/auth/otp/send-phone-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: newPhoneInput })
+                body: JSON.stringify({ phone: newPhoneInput, checkOnly: true })
+            });
+            const checkData = await checkRes.json();
+            if (checkData.error) throw new Error(checkData.error);
+
+            // Directly update
+            const updateRes = await fetch('/api/profile/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullName: editName || profile?.full_name || '',
+                    phone: newPhoneInput
+                })
             });
 
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
+            const updateData = await updateRes.json();
+            if (updateData.error) throw new Error(updateData.error);
 
-            toast.success(data.message);
-            setChangePhoneStep('verify_otp');
+            toast.success('Phone number updated successfully!');
+
+            // Refresh state
+            setProfile((prev: UserProfile | null) => prev ? { ...prev, phone: newPhoneInput } : null);
+            setEditPhone(newPhoneInput);
+
+            // Reset flow
+            setIsChangingPhone(false);
+            setNewPhoneInput('');
         } catch (error: any) {
-            toast.error(error.message || 'Failed to send verification code');
+            console.error('Phone update error:', error);
+            toast.error(error.message || 'Failed to update phone number');
         } finally {
             setIsPhoneLoading(false);
         }
     };
 
-    const handleConfirmPhoneUpdate = async () => {
-        if (phoneOtp.length !== 6) {
-            toast.error('Please enter the 6-digit code');
-            return;
-        }
+    // Address Handlers
+    const handleSaveAddress = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user?.id) return;
 
-        setIsPhoneLoading(true);
+        setIsAddressSaving(true);
         try {
-            const res = await fetch('/api/auth/otp/verify-phone-update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: newPhoneInput, otp: phoneOtp })
-            });
+            const supabase = createClient();
 
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
+            if (editingAddress.is_default) {
+                // unset others first
+                await supabase.from('user_addresses').update({ is_default: false }).eq('user_id', user.id);
+            }
 
-            toast.success('Phone number updated successfully!');
+            if (editingAddress.id) {
+                // Update
+                const { error } = await supabase.from('user_addresses').update({
+                    full_name: editingAddress.full_name,
+                    phone: editingAddress.phone,
+                    street_address: editingAddress.street_address,
+                    city: editingAddress.city,
+                    state: editingAddress.state,
+                    postal_code: editingAddress.postal_code,
+                    country: editingAddress.country || 'India',
+                    is_default: editingAddress.is_default || false,
+                }).eq('id', editingAddress.id).eq('user_id', user.id);
+                if (error) throw error;
+                toast.success('Address updated');
+            } else {
+                // Insert
+                const { error } = await supabase.from('user_addresses').insert({
+                    user_id: user.id,
+                    full_name: editingAddress.full_name || profile?.full_name || '',
+                    phone: editingAddress.phone || profile?.phone || '',
+                    street_address: editingAddress.street_address,
+                    city: editingAddress.city,
+                    state: editingAddress.state,
+                    postal_code: editingAddress.postal_code,
+                    country: 'India',
+                    is_default: editingAddress.is_default || addresses.length === 0,
+                });
+                if (error) throw error;
+                toast.success('Address added successfully');
+            }
 
-            // Refresh local state
-            setProfile(prev => prev ? { ...prev, phone: newPhoneInput } : null);
-            setEditPhone(newPhoneInput);
-
-            // Reset flow
-            setIsChangingPhone(false);
-            setChangePhoneStep('enter_phone');
-            setNewPhoneInput('');
-            setPhoneOtp('');
+            // Refetch addresses
+            const { data } = await supabase.from('user_addresses').select('*').eq('user_id', user.id).order('is_default', { ascending: false }).order('created_at', { ascending: false });
+            setAddresses(data || []);
+            setIsAddressModalOpen(false);
+            setEditingAddress({});
         } catch (error: any) {
-            toast.error(error.message || 'Failed to verify phone');
+            toast.error(error.message || 'Failed to save address');
         } finally {
-            setIsPhoneLoading(false);
+            setIsAddressSaving(false);
+        }
+    };
+
+    const handleDeleteAddress = async (id: string) => {
+        if (!user?.id || !confirm('Are you sure you want to delete this address?')) return;
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.from('user_addresses').delete().eq('id', id).eq('user_id', user.id);
+            if (error) throw error;
+            setAddresses(addresses.filter(a => a.id !== id));
+            toast.success('Address deleted');
+        } catch (error: any) {
+            toast.error('Failed to delete address');
+        }
+    };
+
+    const handleSetDefaultAddress = async (id: string) => {
+        if (!user?.id) return;
+        try {
+            const supabase = createClient();
+            await supabase.from('user_addresses').update({ is_default: false }).eq('user_id', user.id);
+            const { error } = await supabase.from('user_addresses').update({ is_default: true }).eq('id', id).eq('user_id', user.id);
+            if (error) throw error;
+
+            // Refetch
+            const { data } = await supabase.from('user_addresses').select('*').eq('user_id', user.id).order('is_default', { ascending: false }).order('created_at', { ascending: false });
+            setAddresses(data || []);
+            toast.success('Default address updated');
+        } catch (error: any) {
+            toast.error('Failed to set default address');
         }
     };
 
@@ -728,63 +835,30 @@ export default function ProfilePage() {
                                                                     <X size={20} />
                                                                 </button>
 
-                                                                {changePhoneStep === 'enter_phone' && (
-                                                                    <div>
-                                                                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1rem' }}>Update phone number</h3>
-                                                                        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '2rem' }}>
-                                                                            Enter your mobile number. We'll send a 6-digit verification code to this number.
-                                                                        </p>
-                                                                        <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                                                                            <Phone style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
-                                                                            <input
-                                                                                type="tel"
-                                                                                placeholder="+91 9876543210"
-                                                                                value={newPhoneInput}
-                                                                                onChange={(e) => setNewPhoneInput(e.target.value)}
-                                                                                style={{ width: '100%', padding: '1rem 1rem 1rem 3rem', borderRadius: '0.8rem', border: '2px solid #f0ece4', fontSize: '1rem', outline: 'none' }}
-                                                                            />
-                                                                        </div>
-                                                                        <button
-                                                                            onClick={handleSendPhoneOtp}
-                                                                            disabled={isPhoneLoading || newPhoneInput.length < 10}
-                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', background: '#0a0a23', color: '#fff', fontSize: '1rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                                                                        >
-                                                                            {isPhoneLoading && <RefreshCw className="animate-spin" size={18} />}
-                                                                            Send Verification Code
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-
-                                                                {changePhoneStep === 'verify_otp' && (
-                                                                    <div>
-                                                                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1rem' }}>Verify your number</h3>
-                                                                        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '2rem' }}>
-                                                                            We sent a 6-digit code to <strong>{newPhoneInput}</strong>.
-                                                                        </p>
+                                                                <div>
+                                                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1rem' }}>Update phone number</h3>
+                                                                    <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '2rem' }}>
+                                                                        Enter your new mobile number. It will be updated instantly.
+                                                                    </p>
+                                                                    <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                                                                        <Phone style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
                                                                         <input
-                                                                            type="text"
-                                                                            maxLength={6}
-                                                                            placeholder="000000"
-                                                                            value={phoneOtp}
-                                                                            onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ''))}
-                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', border: '2px solid #f0ece4', fontSize: '2rem', fontWeight: 700, textAlign: 'center', letterSpacing: '8px', marginBottom: '1.5rem', outline: 'none' }}
+                                                                            type="tel"
+                                                                            placeholder="+91 9876543210"
+                                                                            value={newPhoneInput}
+                                                                            onChange={(e) => setNewPhoneInput(e.target.value)}
+                                                                            style={{ width: '100%', padding: '1rem 1rem 1rem 3rem', borderRadius: '0.8rem', border: '2px solid #f0ece4', fontSize: '1rem', outline: 'none' }}
                                                                         />
-                                                                        <button
-                                                                            onClick={handleConfirmPhoneUpdate}
-                                                                            disabled={isPhoneLoading || phoneOtp.length !== 6}
-                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', background: '#00b4d8', color: '#fff', fontSize: '1rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                                                                        >
-                                                                            {isPhoneLoading && <RefreshCw className="animate-spin" size={18} />}
-                                                                            Verify & Update Phone
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => setChangePhoneStep('enter_phone')}
-                                                                            style={{ width: '100%', marginTop: '1rem', background: 'transparent', border: 'none', color: '#64748b', fontSize: '0.9rem', cursor: 'pointer' }}
-                                                                        >
-                                                                            Back to enter number
-                                                                        </button>
                                                                     </div>
-                                                                )}
+                                                                    <button
+                                                                        onClick={handleDirectPhoneUpdate}
+                                                                        disabled={isPhoneLoading || newPhoneInput.length < 10}
+                                                                        style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', background: '#0a0a23', color: '#fff', fontSize: '1rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                                                    >
+                                                                        {isPhoneLoading && <RefreshCw className="animate-spin" size={18} />}
+                                                                        Update Phone Number
+                                                                    </button>
+                                                                </div>
                                                             </motion.div>
                                                         </motion.div>
                                                     )}
@@ -798,6 +872,136 @@ export default function ProfilePage() {
                                                 </button>
                                             </div>
                                         )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'addresses' && (
+                                    <div style={{ background: '#fff', borderRadius: '1.25rem', padding: '2rem', border: '1px solid #f0ece4' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                                            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23' }}>Saved Addresses</h2>
+                                            <button
+                                                onClick={() => {
+                                                    setEditingAddress({
+                                                        full_name: profile?.full_name || '',
+                                                        phone: profile?.phone || '',
+                                                        is_default: addresses.length === 0
+                                                    });
+                                                    setIsAddressModalOpen(true);
+                                                }}
+                                                style={{ padding: '0.75rem 1.25rem', borderRadius: '0.75rem', background: '#0a0a23', color: '#fff', border: 'none', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                            >
+                                                <Plus size={16} /> Add New Address
+                                            </button>
+                                        </div>
+
+                                        {addresses.length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+                                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: '#cbd5e1' }}>
+                                                    <MapPin size={32} />
+                                                </div>
+                                                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>No saved addresses</h3>
+                                                <p style={{ color: '#64648b' }}>Add an address to make checkout easier.</p>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+                                                {addresses.map((addr) => (
+                                                    <div key={addr.id} style={{ border: addr.is_default ? '2px solid #00b4d8' : '1px solid #e2e8f0', borderRadius: '1rem', padding: '1.5rem', position: 'relative', background: addr.is_default ? '#f0faff' : '#fff' }}>
+                                                        {addr.is_default && (
+                                                            <span style={{ position: 'absolute', top: '1rem', right: '1rem', background: '#00b4d8', color: '#fff', fontSize: '0.7rem', fontWeight: 700, padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }}>Default</span>
+                                                        )}
+                                                        <p style={{ fontWeight: 700, color: '#0a0a23', marginBottom: '0.5rem', fontSize: '1.05rem', paddingRight: addr.is_default ? '4rem' : '0' }}>{addr.full_name}</p>
+                                                        <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '0.25rem' }}>{addr.street_address}</p>
+                                                        <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '0.25rem' }}>{addr.city}, {addr.state} {addr.postal_code}</p>
+                                                        <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem' }}>{addr.country}</p>
+                                                        <p style={{ fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={14} /> {addr.phone}</p>
+
+                                                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                                                            <button
+                                                                onClick={() => { setEditingAddress(addr); setIsAddressModalOpen(true); }}
+                                                                style={{ flex: 1, padding: '0.5rem', background: '#f8fafc', color: '#0a0a23', border: '1px solid #e2e8f0', borderRadius: '0.5rem', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '0.4rem', alignItems: 'center' }}
+                                                            ><PenLine size={14} /> Edit</button>
+                                                            <button
+                                                                onClick={() => handleDeleteAddress(addr.id)}
+                                                                style={{ padding: '0.5rem', background: '#fff1f2', color: '#ef4444', border: '1px solid #ffe4e6', borderRadius: '0.5rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                                                            ><Trash2 size={16} /></button>
+                                                            {!addr.is_default && (
+                                                                <button
+                                                                    onClick={() => handleSetDefaultAddress(addr.id)}
+                                                                    style={{ flex: 1, padding: '0.5rem', background: 'transparent', color: '#00b4d8', border: '1px solid currentColor', borderRadius: '0.5rem', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
+                                                                >Set Default</button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Address Edit/Add Modal */}
+                                        <AnimatePresence>
+                                            {isAddressModalOpen && (
+                                                <motion.div
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(10,10,35,0.6)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
+                                                >
+                                                    <motion.div
+                                                        initial={{ scale: 0.95, opacity: 0 }}
+                                                        animate={{ scale: 1, opacity: 1 }}
+                                                        exit={{ scale: 0.95, opacity: 0 }}
+                                                        style={{ background: '#fff', borderRadius: '1.5rem', padding: '2rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}
+                                                    >
+                                                        <button onClick={() => setIsAddressModalOpen(false)} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                                                            <X size={20} />
+                                                        </button>
+                                                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1.5rem' }}>{editingAddress.id ? 'Edit Address' : 'Add New Address'}</h3>
+                                                        <form onSubmit={handleSaveAddress} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                                <div>
+                                                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Full Name *</label>
+                                                                    <input required type="text" value={editingAddress.full_name || ''} onChange={(e) => setEditingAddress({ ...editingAddress, full_name: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} />
+                                                                </div>
+                                                                <div>
+                                                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Phone *</label>
+                                                                    <input required type="tel" value={editingAddress.phone || ''} onChange={(e) => setEditingAddress({ ...editingAddress, phone: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} />
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Street Address *</label>
+                                                                <input required type="text" value={editingAddress.street_address || ''} onChange={(e) => setEditingAddress({ ...editingAddress, street_address: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} placeholder="House/Flat No., Building Name, Street" />
+                                                            </div>
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                                <div>
+                                                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>City *</label>
+                                                                    <input required type="text" value={editingAddress.city || ''} onChange={(e) => setEditingAddress({ ...editingAddress, city: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} />
+                                                                </div>
+                                                                <div>
+                                                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>State *</label>
+                                                                    <input required type="text" value={editingAddress.state || ''} onChange={(e) => setEditingAddress({ ...editingAddress, state: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} />
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                                <div>
+                                                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Postal Code (PIN) *</label>
+                                                                    <input required type="text" value={editingAddress.postal_code || ''} onChange={(e) => setEditingAddress({ ...editingAddress, postal_code: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} />
+                                                                </div>
+                                                                <div>
+                                                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Country</label>
+                                                                    <input disabled type="text" value="India" style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#94a3b8' }} />
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                                                <input type="checkbox" id="is_default" checked={editingAddress.is_default || false} onChange={(e) => setEditingAddress({ ...editingAddress, is_default: e.target.checked })} style={{ width: '1rem', height: '1rem', cursor: 'pointer' }} />
+                                                                <label htmlFor="is_default" style={{ fontSize: '0.9rem', color: '#334155', cursor: 'pointer' }}>Make this my default address</label>
+                                                            </div>
+                                                            <button disabled={isAddressSaving} type="submit" style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', background: '#0a0a23', color: '#fff', fontSize: '1rem', fontWeight: 600, border: 'none', cursor: 'pointer', marginTop: '1rem' }}>
+                                                                {isAddressSaving ? 'Saving...' : (editingAddress.id ? 'Save Changes' : 'Add Address')}
+                                                            </button>
+                                                        </form>
+                                                    </motion.div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 )}
 

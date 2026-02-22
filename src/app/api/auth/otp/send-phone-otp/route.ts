@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { sendSMS } from '@/lib/sms';
 
 export async function POST(request: Request) {
     try {
-        const { phone } = await request.json();
+        const body = await request.json();
+        const { phone, checkOnly } = body;
 
         if (!phone) {
             return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
@@ -28,7 +30,12 @@ export async function POST(request: Request) {
             .select('id, email')
             .eq('phone', cleanPhone)
             .neq('id', user.id) // Not current user
-            .single();
+            .maybeSingle();
+
+        if (profileError) {
+            console.error('Profile check error:', profileError);
+            return NextResponse.json({ error: 'Database error while checking phone uniqueness' }, { status: 500 });
+        }
 
         if (existingProfile) {
             return NextResponse.json({
@@ -36,11 +43,10 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // 2. Generate 6-digit OTP
+        // 2. Generate and save internal 6-digit OTP (Fallback/Testing)
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-        // 3. Save OTP to database
         await admin
             .from('phone_verification_otps')
             .delete()
@@ -59,16 +65,37 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to generate verification code' }, { status: 500 });
         }
 
-        // 4. Send SMS (Mock for now, log to console)
+        if (checkOnly) {
+            return NextResponse.json({
+                success: true,
+                message: 'Phone number is available',
+                internalOtp: otp // Provide for frontend fallback
+            });
+        }
+
+        // 3. Optional: Send SMS via Twilio if configured
+        const smsResult = await sendSMS({
+            to: cleanPhone,
+            message: `${otp} is your AdvayDecor verification code. Valid for 10 minutes.`
+        });
+
+        if (smsResult.success) {
+            return NextResponse.json({
+                success: true,
+                message: `Verification code sent to ${cleanPhone}.`
+            });
+        }
+
+        // 4. Default Fallback
         console.log('------------------------------------------');
-        console.log(`SMS TO: ${cleanPhone}`);
-        console.log(`VERIFICATION CODE: ${otp}`);
-        console.log('ALERT: SMS provider not configured. Code logged above.');
+        console.log(`DEV OTP FOR ${cleanPhone}: ${otp}`);
         console.log('------------------------------------------');
 
         return NextResponse.json({
             success: true,
-            message: `Verification code sent to ${cleanPhone}. (Check terminal for code)`
+            testingMode: true,
+            internalOtp: otp,
+            message: `Testing Mode: Code logged to terminal.`
         });
 
     } catch (err: any) {
