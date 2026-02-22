@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Package, ArrowRight, LogOut, Clock, PenLine, Save, X, Phone, MessageSquare, HelpCircle, ChevronRight } from 'lucide-react';
+import { User, Mail, Package, ArrowRight, LogOut, Clock, PenLine, Save, X, Phone, MessageSquare, HelpCircle, ChevronRight, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase';
 import { useUserAuthStore } from '@/lib/auth-store';
@@ -53,6 +53,13 @@ export default function ProfilePage() {
     const [faqQuestions, setFaqQuestions] = useState<FaqQuestion[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
+
+    // Email change state
+    const [isChangingEmail, setIsChangingEmail] = useState(false);
+    const [changeEmailStep, setChangeEmailStep] = useState<'verify_old' | 'enter_new' | 'verify_new'>('verify_old');
+    const [newEmailInput, setNewEmailInput] = useState('');
+    const [emailOtp, setEmailOtp] = useState('');
+    const [isEmailLoading, setIsEmailLoading] = useState(false);
 
     // Edit form state
     const [editName, setEditName] = useState('');
@@ -196,6 +203,113 @@ export default function ProfilePage() {
         } catch (error) {
             console.error('Error updating profile:', error);
             toast.error('Failed to update profile');
+        }
+    };
+
+    // Email Change Handlers
+    const handleSendOldOtp = async () => {
+        setIsEmailLoading(true);
+        try {
+            const res = await fetch('/api/auth/otp/send-current', { method: 'POST' });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            toast.success('Verification code sent to your current email');
+            setChangeEmailStep('verify_old');
+            setIsChangingEmail(true);
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to send verification code');
+        } finally {
+            setIsEmailLoading(false);
+        }
+    };
+
+    const handleVerifyOldOtp = async () => {
+        if (emailOtp.length !== 8) {
+            toast.error('Please enter the 8-digit code');
+            return;
+        }
+        setIsEmailLoading(true);
+        try {
+            const res = await fetch('/api/auth/otp/verify-current', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ otp: emailOtp })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            toast.success(data.message);
+            setChangeEmailStep('enter_new');
+            setEmailOtp('');
+        } catch (error: any) {
+            toast.error(error.message || 'Verification failed');
+        } finally {
+            setIsEmailLoading(false);
+        }
+    };
+
+    const handleSendNewOtp = async () => {
+        if (!newEmailInput || !newEmailInput.includes('@')) {
+            toast.error('Please enter a valid email address');
+            return;
+        }
+        if (newEmailInput.toLowerCase() === profile?.email.toLowerCase()) {
+            toast.error('This is already your current email address');
+            return;
+        }
+
+        setIsEmailLoading(true);
+        try {
+            const res = await fetch('/api/auth/otp/send-new-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newEmail: newEmailInput })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            toast.success('Verification code sent to your new email');
+            setChangeEmailStep('verify_new');
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to send verification code');
+        } finally {
+            setIsEmailLoading(false);
+        }
+    };
+
+    const handleConfirmEmailUpdate = async () => {
+        if (emailOtp.length !== 8) {
+            toast.error('Please enter the 8-digit code');
+            return;
+        }
+        setIsEmailLoading(true);
+        try {
+            const res = await fetch('/api/auth/otp/confirm-email-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newEmail: newEmailInput, otp: emailOtp })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            toast.success('Email updated successfully!');
+
+            // Refresh local state
+            setProfile(prev => prev ? { ...prev, email: newEmailInput.toLowerCase() } : null);
+            if (user) {
+                setUser({ ...user, email: newEmailInput.toLowerCase() });
+            }
+
+            // Reset flow
+            setIsChangingEmail(false);
+            setChangeEmailStep('verify_old');
+            setNewEmailInput('');
+            setEmailOtp('');
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to update email');
+        } finally {
+            setIsEmailLoading(false);
         }
     };
 
@@ -359,9 +473,143 @@ export default function ProfilePage() {
                                         ) : (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '500px' }}>
                                                 <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '0.75rem', border: '1px solid #f0ece4' }}>
-                                                    <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Mail size={14} /> Email Address</p>
-                                                    <p style={{ fontSize: '1rem', color: '#0a0a23', fontWeight: 600 }}>{profile?.email}</p>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div>
+                                                            <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Mail size={14} /> Email Address</p>
+                                                            <p style={{ fontSize: '1rem', color: '#0a0a23', fontWeight: 600 }}>{profile?.email}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={handleSendOldOtp}
+                                                            disabled={isEmailLoading}
+                                                            style={{
+                                                                fontSize: '0.8rem', color: '#00b4d8', background: 'rgba(0,180,216,0.08)',
+                                                                padding: '0.4rem 0.8rem', borderRadius: '0.5rem', border: 'none',
+                                                                fontWeight: 600, cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            {isEmailLoading ? 'Sending...' : 'Change'}
+                                                        </button>
+                                                    </div>
                                                 </div>
+
+                                                {/* Email Change Overlay/Modal */}
+                                                <AnimatePresence>
+                                                    {isChangingEmail && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                            style={{
+                                                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                                                background: 'rgba(10,10,35,0.6)', backdropFilter: 'blur(4px)',
+                                                                zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                padding: '1.5rem'
+                                                            }}
+                                                        >
+                                                            <motion.div
+                                                                initial={{ scale: 0.95, opacity: 0 }}
+                                                                animate={{ scale: 1, opacity: 1 }}
+                                                                exit={{ scale: 0.95, opacity: 0 }}
+                                                                style={{
+                                                                    background: '#fff', borderRadius: '1.5rem', padding: '2.5rem',
+                                                                    width: '100%', maxWidth: '450px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+                                                                    position: 'relative'
+                                                                }}
+                                                            >
+                                                                <button
+                                                                    onClick={() => setIsChangingEmail(false)}
+                                                                    style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                                                                >
+                                                                    <X size={20} />
+                                                                </button>
+
+                                                                {changeEmailStep === 'verify_old' && (
+                                                                    <div>
+                                                                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1rem' }}>Verify current email</h3>
+                                                                        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '2rem' }}>
+                                                                            An 8-digit verification code has been sent to <strong>{profile?.email}</strong>. Please enter it below to proceed.
+                                                                        </p>
+                                                                        <input
+                                                                            type="text"
+                                                                            maxLength={8}
+                                                                            placeholder="Enter 8-digit code"
+                                                                            value={emailOtp}
+                                                                            onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ''))}
+                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', border: '2px solid #f0ece4', fontSize: '1.25rem', fontWeight: 700, textAlign: 'center', letterSpacing: '4px', marginBottom: '1.5rem', outline: 'none' }}
+                                                                        />
+                                                                        <button
+                                                                            onClick={handleVerifyOldOtp}
+                                                                            disabled={isEmailLoading || emailOtp.length !== 8}
+                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', background: '#0a0a23', color: '#fff', fontSize: '1rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                                                        >
+                                                                            {isEmailLoading && <RefreshCw className="animate-spin" size={18} />}
+                                                                            Verify Code
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+
+                                                                {changeEmailStep === 'enter_new' && (
+                                                                    <div>
+                                                                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1rem' }}>Enter new email</h3>
+                                                                        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '2rem' }}>
+                                                                            Your identity has been verified. Now enter the new email address you'd like to use.
+                                                                        </p>
+                                                                        <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                                                                            <Mail style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
+                                                                            <input
+                                                                                type="email"
+                                                                                placeholder="new@example.com"
+                                                                                value={newEmailInput}
+                                                                                onChange={(e) => setNewEmailInput(e.target.value)}
+                                                                                style={{ width: '100%', padding: '1rem 1rem 1rem 3rem', borderRadius: '0.8rem', border: '2px solid #f0ece4', fontSize: '1rem', outline: 'none' }}
+                                                                            />
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={handleSendNewOtp}
+                                                                            disabled={isEmailLoading || !newEmailInput.includes('@')}
+                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', background: '#0a0a23', color: '#fff', fontSize: '1rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                                                        >
+                                                                            {isEmailLoading && <RefreshCw className="animate-spin" size={18} />}
+                                                                            Send OTP to New Email
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+
+                                                                {changeEmailStep === 'verify_new' && (
+                                                                    <div>
+                                                                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1rem' }}>Confirm new email</h3>
+                                                                        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '2rem' }}>
+                                                                            We sent a code to your new email: <strong>{newEmailInput}</strong>. Enter it below to complete the update.
+                                                                        </p>
+                                                                        <input
+                                                                            type="text"
+                                                                            maxLength={8}
+                                                                            placeholder="Enter 8-digit code"
+                                                                            value={emailOtp}
+                                                                            onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ''))}
+                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', border: '2px solid #f0ece4', fontSize: '1.25rem', fontWeight: 700, textAlign: 'center', letterSpacing: '4px', marginBottom: '1.5rem', outline: 'none' }}
+                                                                        />
+                                                                        <button
+                                                                            onClick={handleConfirmEmailUpdate}
+                                                                            disabled={isEmailLoading || emailOtp.length !== 8}
+                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', background: '#00b4d8', color: '#fff', fontSize: '1rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                                                        >
+                                                                            {isEmailLoading && <RefreshCw className="animate-spin" size={18} />}
+                                                                            Update Email Address
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setChangeEmailStep('enter_new')}
+                                                                            style={{ width: '100%', marginTop: '1rem', background: 'transparent', border: 'none', color: '#64748b', fontSize: '0.9rem', cursor: 'pointer' }}
+                                                                        >
+                                                                            Back to enter email
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </motion.div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+
                                                 <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '0.75rem', border: '1px solid #f0ece4' }}>
                                                     <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={14} /> Phone Number</p>
                                                     <p style={{ fontSize: '1rem', color: '#0a0a23', fontWeight: 600 }}>{profile?.phone || 'Not provided'}</p>
