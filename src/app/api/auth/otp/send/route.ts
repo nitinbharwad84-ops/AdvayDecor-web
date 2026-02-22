@@ -61,7 +61,7 @@ export async function POST(request: Request) {
                     </div>
                     <p style="font-size: 14px; color: #9e9eb8;">This code will expire in 10 minutes.</p>
                     <hr style="border: none; border-top: 1px solid #f0ece4; margin: 24px 0;" />
-                    <p style="font-size: 12px; color: #9e9eb8; text-align: center;">© 2024 AdvayDecor. All rights reserved.</p>
+                    <p style="font-size: 12px; color: #9e9eb8; text-align: center;">© 2026 AdvayDecor. All rights reserved.</p>
                 </div>
             `,
         });
