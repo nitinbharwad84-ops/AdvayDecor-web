@@ -61,6 +61,13 @@ export default function ProfilePage() {
     const [emailOtp, setEmailOtp] = useState('');
     const [isEmailLoading, setIsEmailLoading] = useState(false);
 
+    // Phone change state
+    const [isChangingPhone, setIsChangingPhone] = useState(false);
+    const [changePhoneStep, setChangePhoneStep] = useState<'enter_phone' | 'verify_otp'>('enter_phone');
+    const [newPhoneInput, setNewPhoneInput] = useState('');
+    const [phoneOtp, setPhoneOtp] = useState('');
+    const [isPhoneLoading, setIsPhoneLoading] = useState(false);
+
     // Edit form state
     const [editName, setEditName] = useState('');
     const [editPhone, setEditPhone] = useState('');
@@ -174,21 +181,17 @@ export default function ProfilePage() {
         if (!user?.id) return;
 
         try {
-            const supabase = createClient();
+            const res = await fetch('/api/profile/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullName: editName,
+                    phone: editPhone
+                })
+            });
 
-            const updates = {
-                id: user.id,
-                full_name: editName,
-                phone: editPhone,
-                email: user.email, // Ensure email is kept
-                updated_at: new Date().toISOString(),
-            };
-
-            const { error } = await supabase
-                .from('profiles')
-                .upsert(updates);
-
-            if (error) throw error;
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
 
             setProfile(prev => prev ? { ...prev, full_name: editName, phone: editPhone } : null);
             setIsEditing(false);
@@ -200,9 +203,9 @@ export default function ProfilePage() {
                 full_name: editName
             });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating profile:', error);
-            toast.error('Failed to update profile');
+            toast.error(error.message || 'Failed to update profile');
         }
     };
 
@@ -310,6 +313,68 @@ export default function ProfilePage() {
             toast.error(error.message || 'Failed to update email');
         } finally {
             setIsEmailLoading(false);
+        }
+    };
+
+    // Phone Change Handlers
+    const handleSendPhoneOtp = async () => {
+        if (!newPhoneInput || newPhoneInput.length < 10) {
+            toast.error('Please enter a valid phone number');
+            return;
+        }
+
+        setIsPhoneLoading(true);
+        try {
+            const res = await fetch('/api/auth/otp/send-phone-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: newPhoneInput })
+            });
+
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            toast.success(data.message);
+            setChangePhoneStep('verify_otp');
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to send verification code');
+        } finally {
+            setIsPhoneLoading(false);
+        }
+    };
+
+    const handleConfirmPhoneUpdate = async () => {
+        if (phoneOtp.length !== 6) {
+            toast.error('Please enter the 6-digit code');
+            return;
+        }
+
+        setIsPhoneLoading(true);
+        try {
+            const res = await fetch('/api/auth/otp/verify-phone-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: newPhoneInput, otp: phoneOtp })
+            });
+
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            toast.success('Phone number updated successfully!');
+
+            // Refresh local state
+            setProfile(prev => prev ? { ...prev, phone: newPhoneInput } : null);
+            setEditPhone(newPhoneInput);
+
+            // Reset flow
+            setIsChangingPhone(false);
+            setChangePhoneStep('enter_phone');
+            setNewPhoneInput('');
+            setPhoneOtp('');
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to verify phone');
+        } finally {
+            setIsPhoneLoading(false);
         }
     };
 
@@ -611,9 +676,119 @@ export default function ProfilePage() {
                                                 </AnimatePresence>
 
                                                 <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '0.75rem', border: '1px solid #f0ece4' }}>
-                                                    <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={14} /> Phone Number</p>
-                                                    <p style={{ fontSize: '1rem', color: '#0a0a23', fontWeight: 600 }}>{profile?.phone || 'Not provided'}</p>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div>
+                                                            <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={14} /> Phone Number</p>
+                                                            <p style={{ fontSize: '1rem', color: '#0a0a23', fontWeight: 600 }}>{profile?.phone || 'Not provided'}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                setIsChangingPhone(true);
+                                                                setNewPhoneInput(profile?.phone || '');
+                                                            }}
+                                                            style={{
+                                                                fontSize: '0.8rem', color: '#00b4d8', background: 'rgba(0,180,216,0.08)',
+                                                                padding: '0.4rem 0.8rem', borderRadius: '0.5rem', border: 'none',
+                                                                fontWeight: 600, cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            Change
+                                                        </button>
+                                                    </div>
                                                 </div>
+
+                                                {/* Phone Change Overlay/Modal */}
+                                                <AnimatePresence>
+                                                    {isChangingPhone && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                            style={{
+                                                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                                                background: 'rgba(10,10,35,0.6)', backdropFilter: 'blur(4px)',
+                                                                zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                padding: '1.5rem'
+                                                            }}
+                                                        >
+                                                            <motion.div
+                                                                initial={{ scale: 0.95, opacity: 0 }}
+                                                                animate={{ scale: 1, opacity: 1 }}
+                                                                exit={{ scale: 0.95, opacity: 0 }}
+                                                                style={{
+                                                                    background: '#fff', borderRadius: '1.5rem', padding: '2.5rem',
+                                                                    width: '100%', maxWidth: '450px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+                                                                    position: 'relative'
+                                                                }}
+                                                            >
+                                                                <button
+                                                                    onClick={() => setIsChangingPhone(false)}
+                                                                    style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                                                                >
+                                                                    <X size={20} />
+                                                                </button>
+
+                                                                {changePhoneStep === 'enter_phone' && (
+                                                                    <div>
+                                                                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1rem' }}>Update phone number</h3>
+                                                                        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '2rem' }}>
+                                                                            Enter your mobile number. We'll send a 6-digit verification code to this number.
+                                                                        </p>
+                                                                        <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                                                                            <Phone style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
+                                                                            <input
+                                                                                type="tel"
+                                                                                placeholder="+91 9876543210"
+                                                                                value={newPhoneInput}
+                                                                                onChange={(e) => setNewPhoneInput(e.target.value)}
+                                                                                style={{ width: '100%', padding: '1rem 1rem 1rem 3rem', borderRadius: '0.8rem', border: '2px solid #f0ece4', fontSize: '1rem', outline: 'none' }}
+                                                                            />
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={handleSendPhoneOtp}
+                                                                            disabled={isPhoneLoading || newPhoneInput.length < 10}
+                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', background: '#0a0a23', color: '#fff', fontSize: '1rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                                                        >
+                                                                            {isPhoneLoading && <RefreshCw className="animate-spin" size={18} />}
+                                                                            Send Verification Code
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+
+                                                                {changePhoneStep === 'verify_otp' && (
+                                                                    <div>
+                                                                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1rem' }}>Verify your number</h3>
+                                                                        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '2rem' }}>
+                                                                            We sent a 6-digit code to <strong>{newPhoneInput}</strong>.
+                                                                        </p>
+                                                                        <input
+                                                                            type="text"
+                                                                            maxLength={6}
+                                                                            placeholder="000000"
+                                                                            value={phoneOtp}
+                                                                            onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ''))}
+                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', border: '2px solid #f0ece4', fontSize: '2rem', fontWeight: 700, textAlign: 'center', letterSpacing: '8px', marginBottom: '1.5rem', outline: 'none' }}
+                                                                        />
+                                                                        <button
+                                                                            onClick={handleConfirmPhoneUpdate}
+                                                                            disabled={isPhoneLoading || phoneOtp.length !== 6}
+                                                                            style={{ width: '100%', padding: '1rem', borderRadius: '0.8rem', background: '#00b4d8', color: '#fff', fontSize: '1rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                                                        >
+                                                                            {isPhoneLoading && <RefreshCw className="animate-spin" size={18} />}
+                                                                            Verify & Update Phone
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setChangePhoneStep('enter_phone')}
+                                                                            style={{ width: '100%', marginTop: '1rem', background: 'transparent', border: 'none', color: '#64748b', fontSize: '0.9rem', cursor: 'pointer' }}
+                                                                        >
+                                                                            Back to enter number
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </motion.div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
 
                                                 <button
                                                     onClick={() => setIsEditing(true)}

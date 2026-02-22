@@ -350,3 +350,8 @@ CREATE POLICY "Anyone can read active coupons" ON coupons FOR SELECT USING (is_a
 DROP POLICY IF EXISTS "Admins can manage coupons" ON coupons;
 CREATE POLICY "Admins can manage coupons" ON coupons FOR ALL USING (public.is_admin());
 
+-- Add the missing phone column to the profiles table
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
+
+-- Refresh the schema cache
+NOTIFY pgrst, 'reload schema';
