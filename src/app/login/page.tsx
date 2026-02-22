@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, User, LogIn, UserPlus } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, User, LogIn, UserPlus, ShieldCheck, ChevronLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase';
 import { useUserAuthStore } from '@/lib/auth-store';
@@ -21,6 +21,8 @@ export default function LoginPage() {
     const [fullName, setFullName] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [verificationStep, setVerificationStep] = useState<'form' | 'otp'>('form');
+    const [otp, setOtp] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,28 +32,56 @@ export default function LoginPage() {
             const supabase = createClient();
 
             if (mode === 'signup') {
-                // --- Sign Up ---
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: { full_name: fullName },
-                    },
-                });
-
-                if (error) {
-                    toast.error(error.message);
-                    return;
-                }
-
-                if (data.user) {
-                    setUser({
-                        id: data.user.id,
-                        email: data.user.email || email,
-                        full_name: fullName,
+                if (verificationStep === 'form') {
+                    // --- STEP 1: Send 8-digit OTP ---
+                    const res = await fetch('/api/auth/otp/send', {
+                        method: 'POST',
+                        body: JSON.stringify({ email }),
                     });
-                    toast.success('Account created successfully! Welcome to AdvayDecor.');
-                    router.push('/');
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        toast.error(data.error || 'Failed to send verification code');
+                        return;
+                    }
+
+                    toast.success('Verification code sent! Check your email.');
+                    setVerificationStep('otp');
+                } else {
+                    // --- STEP 2: Verify OTP and Create Confirmed User ---
+                    const res = await fetch('/api/auth/otp/verify-and-signup', {
+                        method: 'POST',
+                        body: JSON.stringify({ email, password, fullName, otp }),
+                    });
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        toast.error(data.error || 'Invalid or expired code');
+                        return;
+                    }
+
+                    // Auto-login after successful verification
+                    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                        email,
+                        password,
+                    });
+
+                    if (signInError) {
+                        toast.error('Account created but login failed. Please sign in manually.');
+                        setMode('login');
+                        setVerificationStep('form');
+                        return;
+                    }
+
+                    if (signInData.user) {
+                        setUser({
+                            id: signInData.user.id,
+                            email: signInData.user.email || email,
+                            full_name: fullName,
+                        });
+                        toast.success('Account verified! Welcome to AdvayDecor.');
+                        router.push('/');
+                    }
                 }
             } else {
                 // --- Sign In ---
@@ -75,7 +105,8 @@ export default function LoginPage() {
                     router.push('/');
                 }
             }
-        } catch {
+        } catch (err) {
+            console.error('Auth error:', err);
             toast.error('Something went wrong. Please try again.');
         } finally {
             setIsLoading(false);
@@ -131,52 +162,56 @@ export default function LoginPage() {
                     </Link>
                     <h1 className="font-[family-name:var(--font-display)]"
                         style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '0.5rem' }}>
-                        {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+                        {mode === 'login' ? 'Welcome Back' : verificationStep === 'otp' ? 'Verify Email' : 'Create Account'}
                     </h1>
                     <p style={{ fontSize: '0.875rem', color: '#9e9eb8' }}>
                         {mode === 'login'
                             ? 'Sign in to your account to continue'
-                            : 'Join AdvayDecor and start shopping'
+                            : verificationStep === 'otp'
+                                ? `We've sent a 8-digit code to ${email}`
+                                : 'Join AdvayDecor and start shopping'
                         }
                     </p>
                 </div>
 
-                {/* Mode Tabs */}
-                <div style={{
-                    display: 'flex', gap: '0.5rem', marginBottom: '1.5rem',
-                    background: '#f5f0e8', borderRadius: '0.75rem', padding: '0.25rem',
-                }}>
-                    <button
-                        onClick={() => setMode('login')}
-                        style={{
-                            flex: 1, padding: '0.625rem', borderRadius: '0.625rem', border: 'none',
-                            fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
-                            background: mode === 'login' ? '#fff' : 'transparent',
-                            color: mode === 'login' ? '#0a0a23' : '#9e9eb8',
-                            boxShadow: mode === 'login' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
-                            transition: 'all 0.3s ease',
-                        }}
-                    >
-                        <LogIn size={14} />
-                        Sign In
-                    </button>
-                    <button
-                        onClick={() => setMode('signup')}
-                        style={{
-                            flex: 1, padding: '0.625rem', borderRadius: '0.625rem', border: 'none',
-                            fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
-                            background: mode === 'signup' ? '#fff' : 'transparent',
-                            color: mode === 'signup' ? '#0a0a23' : '#9e9eb8',
-                            boxShadow: mode === 'signup' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
-                            transition: 'all 0.3s ease',
-                        }}
-                    >
-                        <UserPlus size={14} />
-                        Create Account
-                    </button>
-                </div>
+                {/* Mode Tabs (Hide if in OTP step) */}
+                {verificationStep === 'form' && (
+                    <div style={{
+                        display: 'flex', gap: '0.5rem', marginBottom: '1.5rem',
+                        background: '#f5f0e8', borderRadius: '0.75rem', padding: '0.25rem',
+                    }}>
+                        <button
+                            onClick={() => setMode('login')}
+                            style={{
+                                flex: 1, padding: '0.625rem', borderRadius: '0.625rem', border: 'none',
+                                fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
+                                background: mode === 'login' ? '#fff' : 'transparent',
+                                color: mode === 'login' ? '#0a0a23' : '#9e9eb8',
+                                boxShadow: mode === 'login' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+                                transition: 'all 0.3s ease',
+                            }}
+                        >
+                            <LogIn size={14} />
+                            Sign In
+                        </button>
+                        <button
+                            onClick={() => setMode('signup')}
+                            style={{
+                                flex: 1, padding: '0.625rem', borderRadius: '0.625rem', border: 'none',
+                                fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
+                                background: mode === 'signup' ? '#fff' : 'transparent',
+                                color: mode === 'signup' ? '#0a0a23' : '#9e9eb8',
+                                boxShadow: mode === 'signup' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+                                transition: 'all 0.3s ease',
+                            }}
+                        >
+                            <UserPlus size={14} />
+                            Create Account
+                        </button>
+                    </div>
+                )}
 
                 {/* Form */}
                 <motion.form
@@ -194,77 +229,112 @@ export default function LoginPage() {
                     }}
                 >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                        {/* Full Name (signup only) */}
-                        {mode === 'signup' && (
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.375rem' }}>
-                                    Full Name
-                                </label>
-                                <div style={{ position: 'relative' }}>
-                                    <User size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
-                                    <input
-                                        type="text"
-                                        value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
-                                        required
-                                        placeholder="Your full name"
-                                        style={inputStyle}
-                                    />
+                        {verificationStep === 'otp' ? (
+                            <>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.375rem' }}>
+                                        Verification Code
+                                    </label>
+                                    <div style={{ position: 'relative' }}>
+                                        <ShieldCheck size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
+                                        <input
+                                            type="text"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                                            required
+                                            placeholder="Enter 8-digit code"
+                                            style={{ ...inputStyle, letterSpacing: '0.25rem', fontSize: '1.1rem', textAlign: 'center', paddingLeft: '1rem' }}
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setVerificationStep('form')}
+                                        style={{
+                                            background: 'none', border: 'none', color: '#00b4d8', fontSize: '0.75rem',
+                                            fontWeight: 600, cursor: 'pointer', marginTop: '0.75rem', display: 'flex',
+                                            alignItems: 'center', gap: '0.25rem',
+                                        }}
+                                    >
+                                        <ChevronLeft size={14} />
+                                        Change Email / Edit Details
+                                    </button>
                                 </div>
-                            </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* Full Name (signup only) */}
+                                {mode === 'signup' && (
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.375rem' }}>
+                                            Full Name
+                                        </label>
+                                        <div style={{ position: 'relative' }}>
+                                            <User size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
+                                            <input
+                                                type="text"
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                required
+                                                placeholder="Your full name"
+                                                style={inputStyle}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Email */}
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.375rem' }}>
+                                        Email Address
+                                    </label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Mail size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                            placeholder="you@example.com"
+                                            style={inputStyle}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Password */}
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.375rem' }}>
+                                        Password
+                                    </label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Lock size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                            placeholder="••••••••"
+                                            minLength={6}
+                                            style={{ ...inputStyle, paddingRight: '3rem' }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            style={{
+                                                position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)',
+                                                background: 'none', border: 'none', color: '#9e9eb8', cursor: 'pointer', padding: 0,
+                                            }}
+                                        >
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                    {mode === 'signup' && (
+                                        <p style={{ fontSize: '0.7rem', color: '#9e9eb8', marginTop: '0.375rem' }}>
+                                            Must be at least 6 characters
+                                        </p>
+                                    )}
+                                </div>
+                            </>
                         )}
-
-                        {/* Email */}
-                        <div>
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.375rem' }}>
-                                Email Address
-                            </label>
-                            <div style={{ position: 'relative' }}>
-                                <Mail size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    placeholder="you@example.com"
-                                    style={inputStyle}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Password */}
-                        <div>
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.375rem' }}>
-                                Password
-                            </label>
-                            <div style={{ position: 'relative' }}>
-                                <Lock size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    placeholder="••••••••"
-                                    minLength={6}
-                                    style={{ ...inputStyle, paddingRight: '3rem' }}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    style={{
-                                        position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)',
-                                        background: 'none', border: 'none', color: '#9e9eb8', cursor: 'pointer', padding: 0,
-                                    }}
-                                >
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                </button>
-                            </div>
-                            {mode === 'signup' && (
-                                <p style={{ fontSize: '0.7rem', color: '#9e9eb8', marginTop: '0.375rem' }}>
-                                    Must be at least 6 characters
-                                </p>
-                            )}
-                        </div>
                     </div>
 
                     {/* Submit Button */}
@@ -297,7 +367,7 @@ export default function LoginPage() {
                             <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                         ) : (
                             <>
-                                {mode === 'login' ? 'Sign In' : 'Create Account'}
+                                {mode === 'login' ? 'Sign In' : verificationStep === 'otp' ? 'Verify & Create Account' : 'Send Verification Code'}
                                 <ArrowRight size={16} />
                             </>
                         )}
