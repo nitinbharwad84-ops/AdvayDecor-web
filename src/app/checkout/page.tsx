@@ -17,7 +17,9 @@ export default function CheckoutPage() {
     const { items, getSubtotal, clearCart } = useCartStore();
     const [step, setStep] = useState<Step>('shipping');
     const [mounted, setMounted] = useState(false);
-    const [shippingFee] = useState(50);
+    const [shippingFee, setShippingFee] = useState(0);
+    const [freeShippingThreshold, setFreeShippingThreshold] = useState(999);
+    const [baseShippingFee, setBaseShippingFee] = useState(50);
     const [address, setAddress] = useState<ShippingAddress>({
         full_name: '',
         phone: '',
@@ -73,7 +75,33 @@ export default function CheckoutPage() {
             };
             fetchSavedAddresses();
         }
+
+        const fetchShippingConfig = async () => {
+            try {
+                const supabase = createClient();
+                const { data, error } = await supabase.from('site_config').select('*');
+                if (data && !error) {
+                    const feeObj = data.find((c: any) => c.key === 'global_shipping_fee');
+                    const thresholdObj = data.find((c: any) => c.key === 'free_shipping_threshold');
+                    if (feeObj) setBaseShippingFee(Number(feeObj.value));
+                    if (thresholdObj) setFreeShippingThreshold(Number(thresholdObj.value));
+                }
+            } catch (error) {
+                console.error('Error fetching site config:', error);
+            }
+        };
+        fetchShippingConfig();
     }, [isAuthenticated, user]);
+
+    // Recalculate shipping fee based on threshold
+    const subtotal = getSubtotal();
+    useEffect(() => {
+        if (subtotal >= freeShippingThreshold) {
+            setShippingFee(0);
+        } else {
+            setShippingFee(baseShippingFee);
+        }
+    }, [subtotal, baseShippingFee, freeShippingThreshold]);
 
     if (!mounted) {
         return (
@@ -85,7 +113,6 @@ export default function CheckoutPage() {
         );
     }
 
-    const subtotal = getSubtotal();
     const discount = appliedCoupon ? appliedCoupon.discount_amount : 0;
     const total = Math.max(0, subtotal - discount) + shippingFee;
 
@@ -571,8 +598,15 @@ export default function CheckoutPage() {
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                                         <span style={{ color: '#64648b' }}>Shipping</span>
-                                        <span style={{ fontWeight: 500 }}>{formatCurrency(shippingFee)}</span>
+                                        <span style={{ fontWeight: 500 }}>
+                                            {shippingFee === 0 ? <span style={{ color: '#10b981' }}>Free</span> : formatCurrency(shippingFee)}
+                                        </span>
                                     </div>
+                                    {shippingFee > 0 && freeShippingThreshold > 0 && (
+                                        <div style={{ fontSize: '0.7rem', color: '#00b4d8', background: 'rgba(0,180,216,0.05)', padding: '0.5rem', borderRadius: '0.5rem' }}>
+                                            Shop for {formatCurrency(freeShippingThreshold - subtotal)} more to get Free Shipping!
+                                        </div>
+                                    )}
                                     {appliedCoupon && (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#16a34a' }}>
                                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
