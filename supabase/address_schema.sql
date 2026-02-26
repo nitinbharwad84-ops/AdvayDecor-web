@@ -23,6 +23,12 @@ CREATE TABLE IF NOT EXISTS public.user_addresses (
 ALTER TABLE public.user_addresses ENABLE ROW LEVEL SECURITY;
 
 -- Policies
+DROP POLICY IF EXISTS "Users can view their own addresses" ON public.user_addresses;
+DROP POLICY IF EXISTS "Users can insert their own addresses" ON public.user_addresses;
+DROP POLICY IF EXISTS "Users can update their own addresses" ON public.user_addresses;
+DROP POLICY IF EXISTS "Users can delete their own addresses" ON public.user_addresses;
+DROP POLICY IF EXISTS "Admins can manage all addresses" ON public.user_addresses;
+
 -- 1. Users can view their own addresses
 CREATE POLICY "Users can view their own addresses" 
 ON public.user_addresses FOR SELECT
@@ -36,12 +42,18 @@ WITH CHECK (auth.uid() = user_id);
 -- 3. Users can update their own addresses
 CREATE POLICY "Users can update their own addresses" 
 ON public.user_addresses FOR UPDATE
-USING (auth.uid() = user_id);
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
 -- 4. Users can delete their own addresses
 CREATE POLICY "Users can delete their own addresses" 
 ON public.user_addresses FOR DELETE
 USING (auth.uid() = user_id);
+
+-- 5. Admins can manage all addresses
+CREATE POLICY "Admins can manage all addresses" 
+ON public.user_addresses FOR ALL
+USING (public.is_admin());
 
 -- Optional: Function to automatically handle updated_at
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
@@ -52,6 +64,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS on_address_updated ON public.user_addresses;
 CREATE TRIGGER on_address_updated
   BEFORE UPDATE ON public.user_addresses
   FOR EACH ROW

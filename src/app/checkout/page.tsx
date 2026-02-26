@@ -7,6 +7,8 @@ import { motion } from 'framer-motion';
 import { ChevronRight, MapPin, CreditCard, CheckCircle, ShoppingBag, ArrowLeft, Tag, X } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
+import { useUserAuthStore } from '@/lib/auth-store';
+import { createClient } from '@/lib/supabase';
 import type { ShippingAddress } from '@/types';
 
 type Step = 'shipping' | 'payment' | 'confirmation';
@@ -25,6 +27,9 @@ export default function CheckoutPage() {
         state: '',
         pincode: '',
     });
+    const { user, isAuthenticated } = useUserAuthStore();
+    const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+
     const [orderId, setOrderId] = useState('');
     const [isPlacing, setIsPlacing] = useState(false);
 
@@ -34,7 +39,41 @@ export default function CheckoutPage() {
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
     const [couponError, setCouponError] = useState('');
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        setMounted(true);
+        if (isAuthenticated && user?.id) {
+            const fetchSavedAddresses = async () => {
+                try {
+                    const supabase = createClient();
+                    const { data, error } = await supabase
+                        .from('user_addresses')
+                        .select('*')
+                        .eq('user_id', user.id)
+                        .order('is_default', { ascending: false });
+
+                    if (!error && data && data.length > 0) {
+                        setSavedAddresses(data);
+                        // Auto-fill form with default address
+                        const defaultAddress = data.find((a: any) => a.is_default) || data[0];
+                        if (defaultAddress && !address.full_name) {
+                            setAddress({
+                                full_name: defaultAddress.full_name || '',
+                                phone: defaultAddress.phone || '',
+                                address_line1: defaultAddress.street_address || '',
+                                address_line2: '',
+                                city: defaultAddress.city || '',
+                                state: defaultAddress.state || '',
+                                pincode: defaultAddress.postal_code || '',
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching addresses:', error);
+                }
+            };
+            fetchSavedAddresses();
+        }
+    }, [isAuthenticated, user]);
 
     if (!mounted) {
         return (
@@ -222,6 +261,50 @@ export default function CheckoutPage() {
                                     <MapPin size={20} style={{ color: '#00b4d8' }} />
                                     Shipping Address
                                 </h2>
+
+                                {savedAddresses.length > 0 && (
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>Your Saved Addresses</p>
+                                        <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem', msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+                                            {savedAddresses.map(addr => {
+                                                const isSelected = address.pincode === addr.postal_code && address.address_line1 === addr.street_address;
+                                                return (
+                                                    <div
+                                                        key={addr.id}
+                                                        onClick={() => setAddress({
+                                                            full_name: addr.full_name || '',
+                                                            phone: addr.phone || '',
+                                                            address_line1: addr.street_address || '',
+                                                            address_line2: '',
+                                                            city: addr.city || '',
+                                                            state: addr.state || '',
+                                                            pincode: addr.postal_code || '',
+                                                        })}
+                                                        style={{
+                                                            padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '0.75rem', minWidth: '240px', cursor: 'pointer',
+                                                            background: isSelected ? '#f0f9ff' : '#fff',
+                                                            borderColor: isSelected ? '#00b4d8' : '#e5e7eb',
+                                                            transition: 'all 0.2s', flexShrink: 0
+                                                        }}
+                                                    >
+                                                        <p style={{ fontWeight: 600, fontSize: '0.85rem', color: '#0a0a23' }}>
+                                                            {addr.full_name}
+                                                            {addr.is_default && <span style={{ fontSize: '0.65rem', color: '#00b4d8', background: 'rgba(0,180,216,0.1)', padding: '0.1rem 0.3rem', borderRadius: '4px', marginLeft: '0.375rem', fontWeight: 600 }}>DEFAULT</span>}
+                                                        </p>
+                                                        <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>{addr.street_address}, {addr.city}</p>
+                                                        <p style={{ fontSize: '0.8rem', color: '#64748b' }}>{addr.state} - {addr.postal_code}</p>
+                                                        <p style={{ fontSize: '0.8rem', color: '#64748b' }}>{addr.phone}</p>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div style={{ margin: '1.5rem 0', display: 'flex', alignItems: 'center' }}>
+                                            <hr style={{ flex: 1, border: 'none', borderTop: '1px solid #e5e7eb' }} />
+                                            <span style={{ padding: '0 0.75rem', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>OR ENTER NEW DETAILS</span>
+                                            <hr style={{ flex: 1, border: 'none', borderTop: '1px solid #e5e7eb' }} />
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: '1rem' }}>
                                     <div>
