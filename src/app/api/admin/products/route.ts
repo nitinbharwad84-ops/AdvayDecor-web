@@ -118,7 +118,17 @@ export async function PUT(request: Request) {
 
         // Sync variants: delete old, insert new
         if (variants !== undefined) {
-            await admin.from('product_variants').delete().eq('parent_product_id', id);
+            const { error: deleteError } = await admin
+                .from('product_variants')
+                .delete()
+                .eq('parent_product_id', id);
+
+            if (deleteError) {
+                console.error('Error deleting old variants:', deleteError);
+                return NextResponse.json({
+                    error: `Failed to update variants: ${deleteError.message}. This often happens if a variant has already been ordered.`
+                }, { status: 500 });
+            }
 
             if (variants.length > 0) {
                 const variantRows = variants.map((v: Record<string, unknown>) => ({
@@ -128,13 +138,25 @@ export async function PUT(request: Request) {
                     price: v.price,
                     stock_quantity: v.stock_quantity || 0,
                 }));
-                await admin.from('product_variants').insert(variantRows);
+                const { error: insertError } = await admin.from('product_variants').insert(variantRows);
+                if (insertError) {
+                    console.error('Error inserting new variants:', insertError);
+                    return NextResponse.json({ error: `Failed to insert variants: ${insertError.message}` }, { status: 500 });
+                }
             }
         }
 
         // Sync images
         if (images !== undefined) {
-            await admin.from('product_images').delete().eq('product_id', id);
+            const { error: deleteError } = await admin
+                .from('product_images')
+                .delete()
+                .eq('product_id', id);
+
+            // We don't necessarily fail the whole request if image delete fails, but we should log it
+            if (deleteError) {
+                console.warn('Warning: Failed to delete old images:', deleteError);
+            }
 
             if (images.length > 0) {
                 const imageRows = images.map((img: Record<string, unknown>, idx: number) => ({
@@ -142,7 +164,12 @@ export async function PUT(request: Request) {
                     image_url: img.image_url,
                     display_order: idx,
                 }));
-                await admin.from('product_images').insert(imageRows);
+                const { error: insertError } = await admin.from('product_images').insert(imageRows);
+                if (insertError) {
+                    console.error('Error inserting new images:', insertError);
+                    // Unlike variants, we return error here because images are critical
+                    return NextResponse.json({ error: `Failed to insert images: ${insertError.message}` }, { status: 500 });
+                }
             }
         }
 

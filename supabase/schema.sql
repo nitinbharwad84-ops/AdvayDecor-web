@@ -136,8 +136,8 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   order_id UUID REFERENCES orders(id) ON DELETE CASCADE NOT NULL,
-  product_id UUID REFERENCES products(id),
-  variant_id UUID REFERENCES product_variants(id),
+  product_id UUID REFERENCES products(id) ON DELETE SET NULL,
+  variant_id UUID REFERENCES product_variants(id) ON DELETE SET NULL,
   product_title TEXT NOT NULL,
   variant_name TEXT,
   quantity INTEGER NOT NULL DEFAULT 1,
@@ -448,3 +448,10 @@ DROP POLICY IF EXISTS "Admins can manage all addresses" ON user_addresses;
 CREATE POLICY "Admins can manage all addresses" ON user_addresses FOR ALL USING (public.is_admin());
 
 CREATE INDEX IF NOT EXISTS idx_user_addresses_user ON user_addresses(user_id);
+
+-- Migration: Update order_items FKs for proper deletion handling
+ALTER TABLE order_items DROP CONSTRAINT IF EXISTS order_items_product_id_fkey;
+ALTER TABLE order_items ADD CONSTRAINT order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL;
+
+ALTER TABLE order_items DROP CONSTRAINT IF EXISTS order_items_variant_id_fkey;
+ALTER TABLE order_items ADD CONSTRAINT order_items_variant_id_fkey FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE SET NULL;
