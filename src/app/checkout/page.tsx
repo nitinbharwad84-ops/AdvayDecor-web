@@ -30,7 +30,16 @@ export default function CheckoutPage() {
         pincode: '',
     });
     const { user, isAuthenticated } = useUserAuthStore();
-    const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+    const [savedAddresses, setSavedAddresses] = useState<{
+        id: string;
+        full_name: string;
+        phone: string;
+        street_address: string;
+        city: string;
+        state: string;
+        postal_code: string;
+        is_default: boolean;
+    }[]>([]);
 
     const [orderId, setOrderId] = useState('');
     const [isPlacing, setIsPlacing] = useState(false);
@@ -55,17 +64,21 @@ export default function CheckoutPage() {
 
                     if (!error && data && data.length > 0) {
                         setSavedAddresses(data);
-                        // Auto-fill form with default address
-                        const defaultAddress = data.find((a: any) => a.is_default) || data[0];
-                        if (defaultAddress && !address.full_name) {
-                            setAddress({
-                                full_name: defaultAddress.full_name || '',
-                                phone: defaultAddress.phone || '',
-                                address_line1: defaultAddress.street_address || '',
-                                address_line2: '',
-                                city: defaultAddress.city || '',
-                                state: defaultAddress.state || '',
-                                pincode: defaultAddress.postal_code || '',
+                        // Auto-fill form with default address (only if form is empty)
+                        const defaultAddress = data.find((a: { is_default: boolean }) => a.is_default) || data[0];
+                        if (defaultAddress) {
+                            setAddress((prev) => {
+                                // Only auto-fill if user hasn't typed anything yet
+                                if (prev.full_name) return prev;
+                                return {
+                                    full_name: defaultAddress.full_name || '',
+                                    phone: defaultAddress.phone || '',
+                                    address_line1: defaultAddress.street_address || '',
+                                    address_line2: '',
+                                    city: defaultAddress.city || '',
+                                    state: defaultAddress.state || '',
+                                    pincode: defaultAddress.postal_code || '',
+                                };
                             });
                         }
                     }
@@ -81,8 +94,8 @@ export default function CheckoutPage() {
                 const supabase = createClient();
                 const { data, error } = await supabase.from('site_config').select('*');
                 if (data && !error) {
-                    const feeObj = data.find((c: any) => c.key === 'global_shipping_fee');
-                    const thresholdObj = data.find((c: any) => c.key === 'free_shipping_threshold');
+                    const feeObj = data.find((c: { key: string }) => c.key === 'global_shipping_fee');
+                    const thresholdObj = data.find((c: { key: string }) => c.key === 'free_shipping_threshold');
                     if (feeObj) setBaseShippingFee(Number(feeObj.value));
                     if (thresholdObj) setFreeShippingThreshold(Number(thresholdObj.value));
                 }
@@ -91,6 +104,7 @@ export default function CheckoutPage() {
             }
         };
         fetchShippingConfig();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, user]);
 
     // Recalculate shipping fee based on threshold

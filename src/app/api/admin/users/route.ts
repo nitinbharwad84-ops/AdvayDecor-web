@@ -1,12 +1,26 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
+
+// Helper: verify caller is an authenticated admin
+async function verifyAdmin() {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Not authenticated', status: 401, admin: null as ReturnType<typeof createAdminClient> | null };
+
+    const admin = createAdminClient();
+    const { data: isAdmin } = await admin.from('admin_users').select('id').eq('id', user.id).single();
+    if (!isAdmin) return { error: 'Unauthorized', status: 403, admin: null };
+
+    return { error: null, status: 200, admin };
+}
 
 export async function GET() {
     try {
-        const admin = createAdminClient();
+        const auth = await verifyAdmin();
+        if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-        // Fetch users from the profiles table
-        const { data: users, error } = await admin
+        const { data: users, error } = await auth.admin!
             .from('profiles')
             .select('*')
             .order('created_at', { ascending: false });
@@ -14,36 +28,37 @@ export async function GET() {
         if (error) throw error;
 
         return NextResponse.json({ users });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Internal server error';
         console.error('Error fetching admin users:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
 export async function POST(request: Request) {
     try {
+        const auth = await verifyAdmin();
+        if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
         const { email, password, full_name, phone } = await request.json();
 
         if (!email || !password || !full_name) {
             return NextResponse.json({ error: 'Email, password, and full name are required' }, { status: 400 });
         }
 
-        const admin = createAdminClient();
-
         // 1. Create a user in auth.users
-        const { data: authData, error: authError } = await admin.auth.admin.createUser({
+        const { data: authData, error: authError } = await auth.admin!.auth.admin.createUser({
             email,
             password,
-            email_confirm: true, // auto-confirm
+            email_confirm: true,
             user_metadata: { full_name, phone },
         });
 
         if (authError) throw authError;
 
-        // Note: Our Supabase trigger automatically creates a profile row in 'profiles'
-        // But if needed, we can upsert one anyway in case the trigger fails or is missing
+        // Upsert profile in case the trigger fails or is missing
         if (authData.user) {
-            const { error: profileError } = await admin
+            const { error: profileError } = await auth.admin!
                 .from('profiles')
                 .upsert({
                     id: authData.user.id,
@@ -55,14 +70,18 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json({ success: true, user: authData.user });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Internal server error';
         console.error('Error creating user:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
 export async function DELETE(request: Request) {
     try {
+        const auth = await verifyAdmin();
+        if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
         const url = new URL(request.url);
         const id = url.searchParams.get('id');
 
@@ -70,39 +89,37 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'User ID required' }, { status: 400 });
         }
 
-        const admin = createAdminClient();
-
-        // Delete from auth.users (this cascades to profiles and other linked tables because of ON DELETE CASCADE)
-        const { error } = await admin.auth.admin.deleteUser(id);
-
+        const { error } = await auth.admin!.auth.admin.deleteUser(id);
         if (error) throw error;
 
         return NextResponse.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Internal server error';
         console.error('Error deleting user:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
 export async function PUT(request: Request) {
     try {
+        const auth = await verifyAdmin();
+        if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
         const { id, full_name, phone } = await request.json();
 
         if (!id) {
             return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
         }
 
-        const admin = createAdminClient();
-
         // 1. Update auth.users metadata
-        const { error: authError } = await admin.auth.admin.updateUserById(id, {
+        const { error: authError } = await auth.admin!.auth.admin.updateUserById(id, {
             user_metadata: { full_name, phone },
         });
 
         if (authError) throw authError;
 
         // 2. Update profiles table
-        const { error: profileError } = await admin
+        const { error: profileError } = await auth.admin!
             .from('profiles')
             .update({
                 full_name,
@@ -113,8 +130,9 @@ export async function PUT(request: Request) {
         if (profileError) throw profileError;
 
         return NextResponse.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Internal server error';
         console.error('Error updating user:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

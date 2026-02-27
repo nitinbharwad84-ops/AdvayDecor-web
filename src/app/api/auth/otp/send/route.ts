@@ -2,6 +2,33 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/mail';
 
+// Simple in-memory rate limiter (per serverless instance)
+const otpAttempts = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 5; // max OTP sends per window
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15-minute window
+
+function isRateLimited(email: string): boolean {
+    const now = Date.now();
+    const entry = otpAttempts.get(email);
+
+    if (!entry || now > entry.resetAt) {
+        otpAttempts.set(email, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+        return false;
+    }
+
+    if (entry.count >= RATE_LIMIT_MAX) {
+        return true;
+    }
+
+    entry.count++;
+    return false;
+}
+
+// Email format validation
+function isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export async function POST(request: Request) {
     try {
         const { email } = await request.json();
@@ -10,26 +37,44 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Email is required' }, { status: 400 });
         }
 
-        const admin = createAdminClient();
-
-        // 1. Check if user already exists in auth.users
-        const { data: { users }, error: listError } = await admin.auth.admin.listUsers();
-
-        if (listError) {
-            console.error('Error listing users:', listError);
-            return NextResponse.json({ error: 'Failed to verify email availability' }, { status: 500 });
+        if (!isValidEmail(email)) {
+            return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
         }
 
-        const existingUser = users.find(u => u.email === email);
-        if (existingUser) {
+        // Rate limiting check
+        if (isRateLimited(email)) {
+            return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 });
+        }
+
+        const admin = createAdminClient();
+
+        // Check if user already exists — use profiles table query instead of loading ALL users
+        const { data: existingProfile } = await admin
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (existingProfile) {
             return NextResponse.json({ error: 'An account with this email already exists' }, { status: 400 });
         }
 
-        // 2. Generate 8-digit OTP
+        // Also check admin_users table
+        const { data: existingAdmin } = await admin
+            .from('admin_users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (existingAdmin) {
+            return NextResponse.json({ error: 'An account with this email already exists' }, { status: 400 });
+        }
+
+        // Generate 8-digit OTP
         const otp = Math.floor(10000000 + Math.random() * 90000000).toString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes from now
 
-        // 3. Save OTP to database (delete old ones for this email first)
+        // Save OTP to database (delete old ones for this email first)
         await admin
             .from('email_verification_otps')
             .delete()
@@ -48,7 +93,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to generate OTP' }, { status: 500 });
         }
 
-        // 4. Send Email
+        // Send Email
         const result = await sendEmail({
             to: email,
             subject: 'Verify your AdvayDecor Account',
@@ -69,9 +114,6 @@ export async function POST(request: Request) {
         let feedback = 'Verification code sent to your email.';
         if (result.method === 'console') {
             feedback = 'Testing Mode: Verification code logged to terminal.';
-        } else if (result.method === 'resend' && email !== 'nitinbharwad44@gmail.com') {
-            // We know it might fail if unverified, but we rely on sendEmail's catch-all if it actually throws.
-            // If resend returns success but it was actually restricted, we've handled that in sendEmail's error check.
         }
 
         return NextResponse.json({

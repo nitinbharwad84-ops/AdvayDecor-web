@@ -31,6 +31,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'This coupon has expired' }, { status: 400 });
         }
 
+        if (coupon.max_usage !== null && coupon.usage_count >= coupon.max_usage) {
+            return NextResponse.json({ error: 'This coupon has reached its usage limit' }, { status: 400 });
+        }
+
         if (cartTotal < coupon.min_order_amount) {
             return NextResponse.json({ error: `This coupon requires a minimum order of ₹${coupon.min_order_amount}` }, { status: 400 });
         }

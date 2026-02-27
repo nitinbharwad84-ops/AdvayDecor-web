@@ -1,12 +1,43 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 
+// Simple in-memory rate limiter for OTP verification attempts
+const verifyAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_VERIFY_ATTEMPTS = 10; // max verify attempts per email per window
+const VERIFY_WINDOW = 15 * 60 * 1000; // 15-minute window
+
+function isVerifyLimited(email: string): boolean {
+    const now = Date.now();
+    const entry = verifyAttempts.get(email);
+
+    if (!entry || now > entry.resetAt) {
+        verifyAttempts.set(email, { count: 1, resetAt: now + VERIFY_WINDOW });
+        return false;
+    }
+
+    if (entry.count >= MAX_VERIFY_ATTEMPTS) {
+        return true;
+    }
+
+    entry.count++;
+    return false;
+}
+
 export async function POST(request: Request) {
     try {
         const { email, password, fullName, otp } = await request.json();
 
         if (!email || !password || !otp) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        if (password.length < 6) {
+            return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+        }
+
+        // Rate limiting check
+        if (isVerifyLimited(email)) {
+            return NextResponse.json({ error: 'Too many verification attempts. Please request a new code.' }, { status: 429 });
         }
 
         const admin = createAdminClient();
@@ -42,6 +73,9 @@ export async function POST(request: Request) {
             console.error('Signup error:', signupError);
             return NextResponse.json({ error: signupError.message }, { status: 500 });
         }
+
+        // Reset rate limit counter on success
+        verifyAttempts.delete(email);
 
         return NextResponse.json({
             success: true,

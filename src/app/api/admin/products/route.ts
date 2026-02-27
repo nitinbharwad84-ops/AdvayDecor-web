@@ -70,7 +70,8 @@ export async function POST(request: Request) {
                 price: v.price,
                 stock_quantity: v.stock_quantity || 0,
             }));
-            await admin.from('product_variants').insert(variantRows);
+            const { error: variantError } = await admin.from('product_variants').insert(variantRows);
+            if (variantError) console.error('Warning: Failed to insert variants:', variantError.message);
         }
 
         // Insert images if any
@@ -80,7 +81,8 @@ export async function POST(request: Request) {
                 image_url: img.image_url,
                 display_order: idx,
             }));
-            await admin.from('product_images').insert(imageRows);
+            const { error: imageError } = await admin.from('product_images').insert(imageRows);
+            if (imageError) console.error('Warning: Failed to insert images:', imageError.message);
         }
 
         return NextResponse.json(product);
@@ -151,7 +153,7 @@ export async function PUT(request: Request) {
     }
 }
 
-// DELETE: Delete a product
+// DELETE: Delete a product (with storage cleanup)
 export async function DELETE(request: Request) {
     try {
         const supabase = await createServerSupabaseClient();
@@ -166,8 +168,34 @@ export async function DELETE(request: Request) {
         const id = searchParams.get('id');
         if (!id) return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
 
+        // Fetch image URLs before deletion so we can clean up storage
+        const { data: images } = await admin
+            .from('product_images')
+            .select('image_url')
+            .eq('product_id', id);
+
+        // Delete product from DB (cascades to product_images and product_variants)
         const { error } = await admin.from('products').delete().eq('id', id);
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+        // Clean up storage files (best-effort, don't fail the request)
+        if (images && images.length > 0) {
+            try {
+                const filenames = images
+                    .map((img: { image_url: string }) => {
+                        // Extract filename from Supabase storage URL
+                        const parts = img.image_url.split('/product-images/');
+                        return parts.length > 1 ? parts[parts.length - 1] : null;
+                    })
+                    .filter(Boolean) as string[];
+
+                if (filenames.length > 0) {
+                    await admin.storage.from('product-images').remove(filenames);
+                }
+            } catch (storageErr) {
+                console.error('Warning: Failed to clean up storage files:', storageErr);
+            }
+        }
 
         return NextResponse.json({ success: true });
     } catch (err) {

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, email, question, user_id } = body;
+        const { name, email, question } = body;
 
         if (!name || !email || !question) {
             return NextResponse.json(
@@ -38,12 +38,9 @@ export async function POST(request: Request) {
             }
         );
 
-        // Optional: try to get user id from server session just in case
-        let finalUserId = user_id;
-        if (!finalUserId) {
-            const { data: { user } } = await supabase.auth.getUser();
-            finalUserId = user?.id || null;
-        }
+        // Get user_id from server session only, never from client
+        const { data: { user } } = await supabase.auth.getUser();
+        const finalUserId = user?.id || null;
 
         const { error } = await supabase
             .from('faq_questions')

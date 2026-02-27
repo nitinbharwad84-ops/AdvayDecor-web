@@ -6,7 +6,7 @@ import { createServerClient } from '@supabase/ssr';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, email, phone, message, user_id } = body;
+        const { name, email, phone, message } = body;
 
         if (!name || !email || !message) {
             return NextResponse.json({ error: 'Name, email, and message are required' }, { status: 400 });
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         const { error } = await admin
             .from('contact_messages')
             .insert({
-                user_id: user?.id || user_id || null,
+                user_id: user?.id || null,  // Only use server-derived user_id, never from client
                 name,
                 email,
                 phone: phone || null,

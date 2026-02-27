@@ -1,25 +1,32 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase-admin';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 
-// 4. Live Product Feed API Route (Google Merchant Center)
+// Google Merchant Center Product Feed (public, uses RLS-compliant client)
 export async function GET() {
     try {
-        const admin = createAdminClient();
+        const supabase = await createServerSupabaseClient();
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.advaydecor.com';
 
-        const { data: products, error } = await admin
+        // Fetch products WITH their images from the product_images table
+        const { data: products, error } = await supabase
             .from('products')
-            .select('id, title, description, slug, base_price, category, images')
+            .select(`
+                id, title, description, slug, base_price, category,
+                product_images (image_url, display_order)
+            `)
             .eq('is_active', true);
 
         if (error) throw error;
 
         // Generate XML string for RSS feed
-        const itemsXml = (products || []).map((product) => {
+        const itemsXml = (products || []).map((product: Record<string, unknown>) => {
             const productUrl = `${baseUrl}/product/${product.slug}`;
-            const primaryImage = product.images && product.images.length > 0 ? product.images[0] : '';
+            const images = product.product_images as { image_url: string; display_order: number }[] | null;
+            const primaryImage = images && images.length > 0
+                ? images.sort((a, b) => a.display_order - b.display_order)[0].image_url
+                : '';
             // Make sure description is xml-safe
-            const safeDescription = (product.description || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const safeDescription = (String(product.description || '')).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
             return `
         <item>
@@ -53,7 +60,7 @@ export async function GET() {
                 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
             },
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error generating product feed:', error);
         return new NextResponse('Internal Server Error', { status: 500 });
     }

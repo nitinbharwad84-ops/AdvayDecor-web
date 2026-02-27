@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase-admin';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 
-// Public API — returns only active products
+// Public API — returns only active products (uses server client with RLS, not admin client)
 export async function GET() {
     try {
-        const supabase = createAdminClient();
+        const supabase = await createServerSupabaseClient();
 
         const { data: products, error } = await supabase
             .from('products')

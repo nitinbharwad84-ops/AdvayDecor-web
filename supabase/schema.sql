@@ -60,11 +60,15 @@ CREATE TABLE IF NOT EXISTS products (
   slug TEXT UNIQUE NOT NULL,
   description TEXT,
   base_price DECIMAL(10,2) NOT NULL,
-  category TEXT DEFAULT 'Cushion',
+  category TEXT DEFAULT 'Cushion',  -- Legacy text field, kept for backwards compatibility
+  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,  -- Proper FK to categories table
   has_variants BOOLEAN DEFAULT FALSE,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migration: add category_id if upgrading existing table
+ALTER TABLE products ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES categories(id) ON DELETE SET NULL;
 
 -- ============================================
 -- 5. PRODUCT VARIANTS (Child Items)
@@ -242,12 +246,12 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 --
 -- 1. Create the first admin user in Supabase Auth:
 --    Dashboard → Authentication → Add User
---    Email: adminnitin@gmail.com  Password: adminnitin
+--    Use a strong email and password (do NOT commit credentials to source control)
 --
 -- 2. Insert into admin_users table:
 --    INSERT INTO admin_users (id, email, role)
 --    SELECT id, email, 'super_admin'
---    FROM auth.users WHERE email = 'adminnitin@gmail.com';
+--    FROM auth.users WHERE email = '<YOUR_ADMIN_EMAIL>';
 --
 -- ============================================
 -- MIGRATION (if upgrading from old schema with role in profiles):
@@ -338,9 +342,15 @@ CREATE TABLE IF NOT EXISTS coupons (
   min_order_amount DECIMAL(10,2) DEFAULT 0,
   max_discount_amount DECIMAL(10,2),
   is_active BOOLEAN DEFAULT TRUE,
+  usage_count INTEGER DEFAULT 0,
+  max_usage INTEGER,  -- NULL means unlimited usage
   expires_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add columns if upgrading existing table
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0;
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS max_usage INTEGER;
 
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
 
@@ -384,3 +394,57 @@ INSERT INTO categories (name, slug, description) VALUES
   ('Cushion', 'cushion', 'Decorative cushions and pillows'),
   ('Frame', 'frame', 'Photo frames and wall art')
 ON CONFLICT (name) DO NOTHING;
+
+-- ============================================
+-- 16. EMAIL VERIFICATION OTPs
+-- ============================================
+CREATE TABLE IF NOT EXISTS email_verification_otps (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT NOT NULL,
+  otp TEXT NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE email_verification_otps ENABLE ROW LEVEL SECURITY;
+
+-- OTPs are managed only by the service-role (admin client) in API routes.
+-- No user-facing RLS policies needed; the admin client bypasses RLS.
+-- This prevents any client-side tampering with OTP records.
+
+CREATE INDEX IF NOT EXISTS idx_otp_email ON email_verification_otps(email);
+
+-- ============================================
+-- 17. USER ADDRESSES (Saved Shipping Addresses)
+-- ============================================
+CREATE TABLE IF NOT EXISTS user_addresses (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  full_name TEXT NOT NULL,
+  phone TEXT,
+  street_address TEXT NOT NULL,
+  city TEXT NOT NULL,
+  state TEXT NOT NULL,
+  postal_code TEXT NOT NULL,
+  is_default BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE user_addresses ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own addresses" ON user_addresses;
+CREATE POLICY "Users can view own addresses" ON user_addresses FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own addresses" ON user_addresses;
+CREATE POLICY "Users can insert own addresses" ON user_addresses FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own addresses" ON user_addresses;
+CREATE POLICY "Users can update own addresses" ON user_addresses FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own addresses" ON user_addresses;
+CREATE POLICY "Users can delete own addresses" ON user_addresses FOR DELETE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can manage all addresses" ON user_addresses;
+CREATE POLICY "Admins can manage all addresses" ON user_addresses FOR ALL USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_user_addresses_user ON user_addresses(user_id);
