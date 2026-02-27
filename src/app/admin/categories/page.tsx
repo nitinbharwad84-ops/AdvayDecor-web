@@ -299,21 +299,17 @@ export default function CategoriesPage() {
             {/* Modal */}
             <AnimatePresence>
                 {isModalOpen && (
-                    <>
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
                         <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            style={{ position: 'absolute', inset: 0, background: 'rgba(10,10,35,0.5)', backdropFilter: 'blur(4px)' }}
                             onClick={() => setIsModalOpen(false)}
-                            style={{ position: 'fixed', inset: 0, background: 'rgba(10, 10, 35, 0.4)', backdropFilter: 'blur(4px)', zIndex: 100 }}
                         />
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            style={{
-                                position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                                width: '100%', maxWidth: '500px', background: '#fff', borderRadius: '1.25rem',
-                                boxShadow: '0 20px 40px rgba(0,0,0,0.2)', zIndex: 101, overflow: 'hidden'
-                            }}
+                            initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            style={{ background: '#fff', borderRadius: '1.25rem', padding: '2rem', width: '100%', maxWidth: '500px', position: 'relative', zIndex: 101, maxHeight: '90vh', overflowY: 'auto' }}
                         >
-                            <div style={{ padding: '1.5rem', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                                 <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: colors.text }}>
                                     {selectedCategory ? 'Edit Category' : 'Create Category'}
                                 </h2>
@@ -325,68 +321,66 @@ export default function CategoriesPage() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSave} style={{ padding: '1.5rem' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                    <div>
-                                        <label style={labelStyle}>Category Name *</label>
-                                        <input
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={handleNameChange}
-                                            placeholder="e.g., Pillows"
-                                            style={inputStyle}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={labelStyle}>URL Slug *</label>
-                                        <input
-                                            type="text"
-                                            value={formData.slug}
-                                            onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '') })}
-                                            placeholder="pillows"
-                                            style={{ ...inputStyle, fontFamily: 'monospace', background: '#f8fafc' }}
-                                            required
-                                        />
-                                        <p style={{ fontSize: '0.75rem', color: colors.textMuted, marginTop: '0.375rem' }}>
-                                            The URL-friendly version of the name. Must be unique.
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <label style={labelStyle}>Description (Optional)</label>
-                                        <textarea
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            placeholder="Brief description of this category..."
-                                            style={{ ...inputStyle, resize: 'none', height: '80px' }}
-                                        />
-                                    </div>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.75rem', border: `1px solid ${colors.border}` }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.is_active}
-                                            onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                                            style={{ width: '18px', height: '18px', accentColor: colors.primary }}
-                                        />
-                                        <div>
-                                            <div style={{ fontWeight: 500, color: colors.text, fontSize: '0.875rem' }}>Active Status</div>
-                                            <div style={{ fontSize: '0.75rem', color: colors.textMuted }}>If disabled, products might still exist but category won't show</div>
-                                        </div>
-                                    </label>
+                            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                <div>
+                                    <label style={labelStyle}>Category Name *</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={handleNameChange}
+                                        placeholder="e.g., Pillows"
+                                        style={inputStyle}
+                                        required
+                                    />
                                 </div>
+                                <div>
+                                    <label style={labelStyle}>URL Slug *</label>
+                                    <input
+                                        type="text"
+                                        value={formData.slug}
+                                        onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '') })}
+                                        placeholder="pillows"
+                                        style={{ ...inputStyle, fontFamily: 'monospace', background: '#f8fafc' }}
+                                        required
+                                    />
+                                    <p style={{ fontSize: '0.75rem', color: colors.textMuted, marginTop: '0.375rem' }}>
+                                        The URL-friendly version of the name. Must be unique.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Description (Optional)</label>
+                                    <textarea
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        placeholder="Brief description of this category..."
+                                        style={{ ...inputStyle, resize: 'none', height: '80px' }}
+                                    />
+                                </div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.75rem', border: `1px solid ${colors.border}` }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.is_active}
+                                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                                        style={{ width: '18px', height: '18px', accentColor: colors.primary }}
+                                    />
+                                    <div>
+                                        <div style={{ fontWeight: 500, color: colors.text, fontSize: '0.875rem' }}>Active Status</div>
+                                        <div style={{ fontSize: '0.75rem', color: colors.textMuted }}>If disabled, products might still exist but category won't show</div>
+                                    </div>
+                                </label>
 
-                                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
-                                        style={{ flex: 1, padding: '0.75rem', background: 'none', border: `1px solid ${colors.border}`, color: colors.text, borderRadius: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                                        style={{ flex: 1, padding: '0.875rem', background: '#f8fafc', border: `1px solid ${colors.border}`, color: colors.text, borderRadius: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSaving}
-                                        style={{ flex: 1, padding: '0.75rem', background: colors.primary, border: 'none', color: '#fff', borderRadius: '0.75rem', fontWeight: 600, cursor: isSaving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', opacity: isSaving ? 0.7 : 1 }}
+                                        style={{ flex: 1, padding: '0.875rem', background: colors.primary, border: 'none', color: '#fff', borderRadius: '0.75rem', fontWeight: 600, cursor: isSaving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', opacity: isSaving ? 0.7 : 1 }}
                                     >
                                         {isSaving ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={18} />}
                                         {selectedCategory ? 'Save Changes' : 'Create Category'}
@@ -394,7 +388,7 @@ export default function CategoriesPage() {
                                 </div>
                             </form>
                         </motion.div>
-                    </>
+                    </div>
                 )}
             </AnimatePresence>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

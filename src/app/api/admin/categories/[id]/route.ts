@@ -3,9 +3,9 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 // PUT: Update a category
-export async function PUT(request: Request, context: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const id = context.params.id;
+        const id = (await params).id;
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -37,9 +37,9 @@ export async function PUT(request: Request, context: { params: { id: string } })
 }
 
 // DELETE: Delete a category
-export async function DELETE(request: Request, context: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const id = context.params.id;
+        const id = (await params).id;
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
