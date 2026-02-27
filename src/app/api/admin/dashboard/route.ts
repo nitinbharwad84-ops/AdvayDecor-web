@@ -49,12 +49,47 @@ export async function GET() {
             };
         });
 
+        // ===== 7-Day Revenue Chart Data =====
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
+        const { data: weekOrders } = await admin
+            .from('orders')
+            .select('total_amount, created_at')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .not('status', 'eq', 'Cancelled');
+
+        const dailyMap: Record<string, { revenue: number; orders: number }> = {};
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(sevenDaysAgo);
+            d.setDate(d.getDate() + i);
+            const key = d.toISOString().split('T')[0];
+            dailyMap[key] = { revenue: 0, orders: 0 };
+        }
+
+        for (const o of (weekOrders || [])) {
+            const key = new Date(o.created_at).toISOString().split('T')[0];
+            if (dailyMap[key]) {
+                dailyMap[key].revenue += Number(o.total_amount);
+                dailyMap[key].orders += 1;
+            }
+        }
+
+        const revenueChart = Object.entries(dailyMap).map(([date, data]) => ({
+            date,
+            label: new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }),
+            revenue: data.revenue,
+            orders: data.orders,
+        }));
+
         return NextResponse.json({
             totalProducts,
             totalOrders,
             pendingOrders,
             revenue,
             recentOrders,
+            revenueChart,
         });
     } catch (err) {
         console.error('Error fetching dashboard:', err);

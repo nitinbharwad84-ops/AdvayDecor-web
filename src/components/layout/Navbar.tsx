@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, User, Menu, X, ChevronRight, Search } from 'lucide-react';
+import { ShoppingBag, User, Menu, X, ChevronRight, Search, Heart } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { useUserAuthStore } from '@/lib/auth-store';
 
@@ -237,6 +237,26 @@ export default function Navbar() {
                                 <User size={18} strokeWidth={1.8} />
                             </Link>
                         )}
+
+                        {/* Wishlist (desktop only) */}
+                        <Link
+                            href="/wishlist"
+                            className="hidden md:flex"
+                            style={{
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                transition: 'all 0.3s ease',
+                                color: showSolid ? 'rgba(10,10,35,0.5)' : 'rgba(255,255,255,0.6)',
+                                textDecoration: 'none',
+                            }}
+                            aria-label="Wishlist"
+                            title="Wishlist"
+                        >
+                            <Heart size={18} strokeWidth={1.8} />
+                        </Link>
 
                         {/* Cart */}
                         <button

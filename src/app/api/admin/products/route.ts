@@ -148,12 +148,46 @@ export async function PUT(request: Request) {
 
         // Sync images
         if (images !== undefined) {
+            // Fetch old images to identify orphans for storage cleanup
+            const { data: oldImages } = await admin
+                .from('product_images')
+                .select('image_url')
+                .eq('product_id', id);
+
+            const newImageUrls = new Set(images.map((img: Record<string, unknown>) => img.image_url as string));
+            const orphanedUrls = (oldImages || [])
+                .map((img: { image_url: string }) => img.image_url)
+                .filter((url: string) => !newImageUrls.has(url));
+
+            // Remove orphaned files from Supabase Storage
+            if (orphanedUrls.length > 0) {
+                const filePaths = orphanedUrls
+                    .map((url: string) => {
+                        try {
+                            const u = new URL(url);
+                            const match = u.pathname.match(/\/storage\/v1\/object\/public\/product-images\/(.+)/);
+                            return match ? match[1] : null;
+                        } catch {
+                            return null;
+                        }
+                    })
+                    .filter(Boolean) as string[];
+
+                if (filePaths.length > 0) {
+                    const { error: storageError } = await admin.storage
+                        .from('product-images')
+                        .remove(filePaths);
+                    if (storageError) {
+                        console.warn('Warning: Failed to clean up orphaned storage files:', storageError);
+                    }
+                }
+            }
+
             const { error: deleteError } = await admin
                 .from('product_images')
                 .delete()
                 .eq('product_id', id);
 
-            // We don't necessarily fail the whole request if image delete fails, but we should log it
             if (deleteError) {
                 console.warn('Warning: Failed to delete old images:', deleteError);
             }

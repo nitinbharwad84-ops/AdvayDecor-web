@@ -49,6 +49,9 @@ export default function CheckoutPage() {
     const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_amount: number } | null>(null);
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
     const [couponError, setCouponError] = useState('');
+    const [saveAddress, setSaveAddress] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'COD' | 'ONLINE'>('COD');
+    const razorpayEnabled = !!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
     useEffect(() => {
         setMounted(true);
@@ -175,13 +178,113 @@ export default function CheckoutPage() {
                 unit_price: item.variant?.price ?? item.product.base_price,
             }));
 
+            // --- Online Payment Flow (Razorpay) ---
+            if (paymentMethod === 'ONLINE') {
+                // Step 1: Create Razorpay order
+                const razRes = await fetch('/api/razorpay/create-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: total,
+                        receipt: `order_${Date.now()}`,
+                    }),
+                });
+                const razData = await razRes.json();
+                if (!razRes.ok || !razData.order_id) {
+                    alert(razData.error || 'Failed to initiate payment');
+                    setIsPlacing(false);
+                    return;
+                }
+
+                // Step 2: Load Razorpay checkout
+                const script = document.createElement('script');
+                script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                script.async = true;
+                document.body.appendChild(script);
+
+                await new Promise<void>((resolve) => {
+                    script.onload = () => resolve();
+                });
+
+                const options = {
+                    key: razData.key_id,
+                    amount: razData.amount,
+                    currency: razData.currency,
+                    name: 'AdvayDecor',
+                    description: `Order for ${orderItems.length} item${orderItems.length > 1 ? 's' : ''}`,
+                    order_id: razData.order_id,
+                    prefill: {
+                        name: address.full_name,
+                        contact: address.phone,
+                        email: user?.email || '',
+                    },
+                    theme: { color: '#00b4d8' },
+                    handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+                        // Step 3: Verify payment
+                        const verifyRes = await fetch('/api/razorpay/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(response),
+                        });
+                        const verifyData = await verifyRes.json();
+
+                        if (!verifyRes.ok || !verifyData.success) {
+                            alert('Payment verification failed. Contact support.');
+                            setIsPlacing(false);
+                            return;
+                        }
+
+                        // Step 4: Place the order with payment details
+                        const orderRes = await fetch('/api/orders', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                guest_info: {
+                                    name: address.full_name,
+                                    email: user?.email || '',
+                                    phone: address.phone,
+                                },
+                                shipping_address: address,
+                                items: orderItems,
+                                payment_method: 'Razorpay',
+                                payment_id: response.razorpay_payment_id,
+                                shipping_fee: shippingFee,
+                                coupon_code: appliedCoupon?.code || null,
+                                discount_amount: appliedCoupon?.discount_amount || 0,
+                            }),
+                        });
+                        const orderData = await orderRes.json();
+                        if (orderRes.ok && orderData.order_id) {
+                            setOrderId(orderData.order_id.substring(0, 8).toUpperCase());
+                            setStep('confirmation');
+                            clearCart();
+                            saveAddressIfNeeded();
+                        } else {
+                            alert(orderData.error || 'Order placement failed after payment.');
+                        }
+                        setIsPlacing(false);
+                    },
+                    modal: {
+                        ondismiss: () => {
+                            setIsPlacing(false);
+                        },
+                    },
+                };
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const rzp = new (window as any).Razorpay(options);
+                rzp.open();
+                return; // Don't set isPlacing false here — handler does it
+            }
+
+            // --- COD Flow ---
             const res = await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     guest_info: {
                         name: address.full_name,
-                        email: '',
+                        email: user?.email || '',
                         phone: address.phone,
                     },
                     shipping_address: address,
@@ -199,6 +302,7 @@ export default function CheckoutPage() {
                 setOrderId(data.order_id.substring(0, 8).toUpperCase());
                 setStep('confirmation');
                 clearCart();
+                saveAddressIfNeeded();
             } else {
                 alert(data.error || 'Failed to place order. Please try again.');
             }
@@ -206,6 +310,27 @@ export default function CheckoutPage() {
             alert('Something went wrong. Please try again.');
         } finally {
             setIsPlacing(false);
+        }
+    };
+
+    const saveAddressIfNeeded = async () => {
+        if (saveAddress && isAuthenticated && user?.id) {
+            try {
+                const supabase = createClient();
+                await supabase.from('user_addresses').insert({
+                    user_id: user.id,
+                    full_name: address.full_name,
+                    phone: address.phone,
+                    street_address: address.address_line1 + (address.address_line2 ? ', ' + address.address_line2 : ''),
+                    city: address.city,
+                    state: address.state,
+                    postal_code: address.pincode,
+                    country: 'India',
+                    is_default: savedAddresses.length === 0,
+                });
+            } catch (addrErr) {
+                console.warn('Address save failed (non-critical):', addrErr);
+            }
         }
     };
 
@@ -419,6 +544,25 @@ export default function CheckoutPage() {
                                     </div>
                                 </div>
 
+                                {/* Save Address Checkbox */}
+                                {isAuthenticated && (
+                                    <label style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                        marginTop: '1rem', padding: '0.75rem 1rem',
+                                        borderRadius: '0.75rem', background: 'rgba(0,180,216,0.04)',
+                                        border: '1px solid #eef6f8', cursor: 'pointer',
+                                        fontSize: '0.85rem', color: '#0a0a23', fontWeight: 500,
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={saveAddress}
+                                            onChange={(e) => setSaveAddress(e.target.checked)}
+                                            style={{ accentColor: '#00b4d8', width: '16px', height: '16px' }}
+                                        />
+                                        Save this address for future orders
+                                    </label>
+                                )}
+
                                 <button
                                     type="submit"
                                     style={{
@@ -447,25 +591,41 @@ export default function CheckoutPage() {
                                 </h2>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    <label style={{
-                                        display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
-                                        borderRadius: '0.75rem', border: '2px solid #00b4d8', background: 'rgba(0,180,216,0.03)', cursor: 'pointer',
-                                    }}>
-                                        <input type="radio" name="payment" defaultChecked style={{ accentColor: '#00b4d8' }} />
+                                    <label
+                                        onClick={() => setPaymentMethod('COD')}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
+                                            borderRadius: '0.75rem',
+                                            border: `2px solid ${paymentMethod === 'COD' ? '#00b4d8' : '#e8e4dc'}`,
+                                            background: paymentMethod === 'COD' ? 'rgba(0,180,216,0.03)' : '#fff',
+                                            cursor: 'pointer', transition: 'all 0.2s ease',
+                                        }}
+                                    >
+                                        <input type="radio" name="payment" checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} style={{ accentColor: '#00b4d8' }} />
                                         <div>
                                             <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '0.9rem' }}>Cash on Delivery (COD)</p>
                                             <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>Pay when your order arrives</p>
                                         </div>
                                     </label>
 
-                                    <label style={{
-                                        display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
-                                        borderRadius: '0.75rem', border: '2px solid #e8e4dc', opacity: 0.5, cursor: 'not-allowed',
-                                    }}>
-                                        <input type="radio" name="payment" disabled style={{ accentColor: '#00b4d8' }} />
+                                    <label
+                                        onClick={() => razorpayEnabled && setPaymentMethod('ONLINE')}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
+                                            borderRadius: '0.75rem',
+                                            border: `2px solid ${paymentMethod === 'ONLINE' ? '#00b4d8' : '#e8e4dc'}`,
+                                            background: paymentMethod === 'ONLINE' ? 'rgba(0,180,216,0.03)' : '#fff',
+                                            opacity: razorpayEnabled ? 1 : 0.5,
+                                            cursor: razorpayEnabled ? 'pointer' : 'not-allowed',
+                                            transition: 'all 0.2s ease',
+                                        }}
+                                    >
+                                        <input type="radio" name="payment" checked={paymentMethod === 'ONLINE'} disabled={!razorpayEnabled} onChange={() => razorpayEnabled && setPaymentMethod('ONLINE')} style={{ accentColor: '#00b4d8' }} />
                                         <div>
                                             <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '0.9rem' }}>Online Payment</p>
-                                            <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>UPI / Card / Netbanking — Coming Soon</p>
+                                            <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>
+                                                {razorpayEnabled ? 'UPI / Card / Netbanking via Razorpay' : 'UPI / Card / Netbanking — Coming Soon'}
+                                            </p>
                                         </div>
                                     </label>
                                 </div>

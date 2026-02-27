@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Package, ShoppingCart, IndianRupee, Clock, ArrowUpRight } from 'lucide-react';
+import { Package, ShoppingCart, IndianRupee, Clock, ArrowUpRight, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { useAdminAuthStore } from '@/lib/auth-store';
 import { useRouter } from 'next/navigation';
@@ -29,6 +29,7 @@ interface DashboardData {
     pendingOrders: number;
     revenue: number;
     recentOrders: { id: string; customer: string; total: string; status: string; date: string }[];
+    revenueChart?: { date: string; label: string; revenue: number; orders: number }[];
 }
 
 export default function AdminDashboard() {
@@ -130,6 +131,54 @@ export default function AdminDashboard() {
                     );
                 })}
             </div>
+
+            {/* Revenue Chart */}
+            {data.revenueChart && data.revenueChart.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    style={{
+                        borderRadius: '1rem', background: '#ffffff', border: '1px solid #f0ece4',
+                        padding: '1.5rem', marginBottom: '2rem',
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                        <BarChart3 size={18} style={{ color: '#00b4d8' }} />
+                        <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#0a0a23' }}>Revenue — Last 7 Days</h2>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', height: '180px' }}>
+                        {(() => {
+                            const maxRevenue = Math.max(...data.revenueChart.map(d => d.revenue), 1);
+                            return data.revenueChart.map((day) => {
+                                const height = Math.max(4, (day.revenue / maxRevenue) * 160);
+                                return (
+                                    <div key={day.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                        {/* Value label */}
+                                        <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#0a0a23', whiteSpace: 'nowrap' }}>
+                                            {day.revenue > 0 ? `₹${(day.revenue / 1000).toFixed(day.revenue >= 1000 ? 1 : 0)}${day.revenue >= 1000 ? 'k' : ''}` : '—'}
+                                        </span>
+                                        {/* Bar */}
+                                        <div
+                                            style={{
+                                                width: '100%', maxWidth: '48px',
+                                                height: `${height}px`,
+                                                borderRadius: '0.5rem 0.5rem 0.25rem 0.25rem',
+                                                background: day.revenue > 0 ? 'linear-gradient(180deg, #00b4d8, #0096b7)' : '#f0ece4',
+                                                transition: 'height 0.5s ease',
+                                                position: 'relative',
+                                            }}
+                                            title={`${day.label}: ₹${day.revenue.toLocaleString('en-IN')} (${day.orders} order${day.orders !== 1 ? 's' : ''})`}
+                                        />
+                                        {/* Day label */}
+                                        <span style={{ fontSize: '0.7rem', color: '#9e9eb8', fontWeight: 500 }}>{day.label}</span>
+                                    </div>
+                                );
+                            });
+                        })()}
+                    </div>
+                </motion.div>
+            )}
 
             {/* Recent Orders */}
             <motion.div

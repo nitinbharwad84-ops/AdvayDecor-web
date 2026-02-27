@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase-admin';
+import { sendEmail } from '@/lib/mail';
 
 // POST: Place a new order (guest or authenticated)
 export async function POST(request: Request) {
@@ -222,6 +223,76 @@ export async function POST(request: Request) {
                 }
             } catch (couponErr) {
                 console.error('Warning: Failed to increment coupon usage:', couponErr);
+            }
+        }
+
+        // ===== STOCK DEDUCTION =====
+        for (const item of verifiedItems) {
+            if (item.variant_id) {
+                try {
+                    const { data: currentVariant } = await admin
+                        .from('product_variants')
+                        .select('stock_quantity')
+                        .eq('id', item.variant_id)
+                        .single();
+                    if (currentVariant && currentVariant.stock_quantity !== null) {
+                        const newStock = Math.max(0, currentVariant.stock_quantity - item.quantity);
+                        await admin
+                            .from('product_variants')
+                            .update({ stock_quantity: newStock })
+                            .eq('id', item.variant_id);
+                    }
+                } catch (stockErr) {
+                    console.error('Warning: Failed to deduct stock for variant', item.variant_id, stockErr);
+                }
+            }
+        }
+
+        // ===== ORDER CONFIRMATION EMAIL =====
+        const customerEmail = user?.email || guest_info?.email;
+        if (customerEmail) {
+            const orderId = order.id.substring(0, 8).toUpperCase();
+            const itemsHtml = verifiedItems.map(item =>
+                `<tr>
+                    <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${item.product_title}${item.variant_name ? ` — ${item.variant_name}` : ''}</td>
+                    <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:center;">${item.quantity}</td>
+                    <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:right;">₹${item.total_price.toLocaleString('en-IN')}</td>
+                </tr>`
+            ).join('');
+
+            try {
+                await sendEmail({
+                    to: customerEmail,
+                    subject: `AdvayDecor — Order Confirmed #${orderId}`,
+                    html: `
+                        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#fdfbf7;border-radius:16px;">
+                            <h2 style="color:#0a0a23;margin-bottom:8px;">Order Confirmed! 🎉</h2>
+                            <p style="color:#64648b;font-size:15px;">Thank you for your order. Here's your summary:</p>
+                            <div style="background:#fff;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #f0ece4;">
+                                <p style="margin:0 0 8px;"><strong>Order ID:</strong> #${orderId}</p>
+                                <p style="margin:0 0 8px;"><strong>Payment:</strong> ${payment_method || 'COD'}</p>
+                                <p style="margin:0;"><strong>Shipping to:</strong> ${shipping_address.full_name}, ${shipping_address.city}</p>
+                            </div>
+                            <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                                <thead>
+                                    <tr style="background:#f5f0e8;">
+                                        <th style="padding:10px 12px;text-align:left;font-size:14px;">Item</th>
+                                        <th style="padding:10px 12px;text-align:center;font-size:14px;">Qty</th>
+                                        <th style="padding:10px 12px;text-align:right;font-size:14px;">Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${itemsHtml}</tbody>
+                            </table>
+                            <div style="border-top:2px solid #0a0a23;padding-top:12px;text-align:right;">
+                                ${finalDiscount > 0 ? `<p style="margin:4px 0;color:#16a34a;font-size:14px;">Discount: -₹${finalDiscount.toLocaleString('en-IN')}</p>` : ''}
+                                ${verifiedShippingFee > 0 ? `<p style="margin:4px 0;color:#64648b;font-size:14px;">Shipping: ₹${verifiedShippingFee.toLocaleString('en-IN')}</p>` : '<p style="margin:4px 0;color:#10b981;font-size:14px;">Shipping: Free</p>'}
+                                <p style="font-size:20px;font-weight:700;color:#0a0a23;margin:8px 0 0;">Total: ₹${totalAmount.toLocaleString('en-IN')}</p>
+                            </div>
+                        </div>
+                    `,
+                });
+            } catch (emailErr) {
+                console.error('Warning: Order confirmation email failed:', emailErr);
             }
         }
 

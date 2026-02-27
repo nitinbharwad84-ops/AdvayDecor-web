@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, MoreHorizontal, Package } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, MoreHorizontal, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -12,6 +12,8 @@ export default function AdminProductsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 15;
 
     const fetchProducts = () => {
         setLoading(true);
@@ -45,6 +47,15 @@ export default function AdminProductsPage() {
     const products = allProducts.filter(p =>
         p.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
+    const paginatedProducts = products.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    // Reset to page 1 when search changes
+    useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
     if (loading) {
         return (
@@ -123,7 +134,7 @@ export default function AdminProductsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {products.map((product) => (
+                            {paginatedProducts.map((product) => (
                                 <tr key={product.id} style={{ borderBottom: '1px solid #f0ece4', transition: 'background 0.2s' }}>
                                     <td style={{ padding: '1rem 1.5rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -189,6 +200,39 @@ export default function AdminProductsPage() {
                     <div style={{ textAlign: 'center', padding: '3rem 0' }}>
                         <Package size={40} style={{ margin: '0 auto', color: '#9e9eb8', marginBottom: '1rem' }} />
                         <p style={{ color: '#64648b' }}>No products found</p>
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '1.25rem 0' }}>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            style={{
+                                padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e8e4dc',
+                                background: '#fff', cursor: currentPage === 1 ? 'default' : 'pointer',
+                                opacity: currentPage === 1 ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: '0.25rem',
+                                fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23',
+                            }}
+                        >
+                            <ChevronLeft size={14} /> Previous
+                        </button>
+                        <span style={{ fontSize: '0.85rem', color: '#64648b' }}>
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            style={{
+                                padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e8e4dc',
+                                background: '#fff', cursor: currentPage === totalPages ? 'default' : 'pointer',
+                                opacity: currentPage === totalPages ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: '0.25rem',
+                                fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23',
+                            }}
+                        >
+                            Next <ChevronRight size={14} />
+                        </button>
                     </div>
                 )}
             </motion.div>

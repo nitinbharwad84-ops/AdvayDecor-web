@@ -6,11 +6,13 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Heart, ChevronRight, Shield, Truck, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useUserAuthStore } from '@/lib/auth-store';
 import ImageGallery from '@/components/shop/ImageGallery';
 import VariantSelector from '@/components/shop/VariantSelector';
 import PincodeChecker from '@/components/shop/PincodeChecker';
 import StockIndicator from '@/components/shop/StockIndicator';
 import ProductCard from '@/components/shop/ProductCard';
+import ProductReviews from '@/components/shop/ProductReviews';
 import { useCartStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 import type { Product, ProductVariant } from '@/types';
@@ -23,6 +25,7 @@ export default function ProductDetailPage() {
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
     const [isWishlisted, setIsWishlisted] = useState(false);
     const addItem = useCartStore((s) => s.addItem);
+    const { isAuthenticated } = useUserAuthStore();
 
     useEffect(() => {
         fetch('/api/products')
@@ -33,6 +36,21 @@ export default function ProductDetailPage() {
             })
             .catch(() => setLoading(false));
     }, []);
+
+    // Check if product is in wishlist
+    useEffect(() => {
+        if (!isAuthenticated || !allProducts.length) return;
+        const p = allProducts.find((p) => p.slug === slug);
+        if (!p) return;
+        fetch('/api/wishlist')
+            .then(res => res.json())
+            .then(data => {
+                if (data.items && data.items.includes(p.id)) {
+                    setIsWishlisted(true);
+                }
+            })
+            .catch(() => { });
+    }, [isAuthenticated, allProducts, slug]);
 
     const product = allProducts.find((p) => p.slug === slug) || null;
 
@@ -197,7 +215,30 @@ export default function ProductDetailPage() {
                                 </motion.button>
 
                                 <motion.button
-                                    onClick={() => setIsWishlisted(!isWishlisted)}
+                                    onClick={async () => {
+                                        if (!isAuthenticated) {
+                                            setIsWishlisted(!isWishlisted);
+                                            toast(isWishlisted ? 'Removed from wishlist' : 'Login to save your wishlist');
+                                            return;
+                                        }
+                                        try {
+                                            if (isWishlisted) {
+                                                await fetch(`/api/wishlist?product_id=${product.id}`, { method: 'DELETE' });
+                                                setIsWishlisted(false);
+                                                toast.success('Removed from wishlist');
+                                            } else {
+                                                await fetch('/api/wishlist', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ product_id: product.id }),
+                                                });
+                                                setIsWishlisted(true);
+                                                toast.success('Added to wishlist ❤️');
+                                            }
+                                        } catch {
+                                            toast.error('Wishlist update failed');
+                                        }
+                                    }}
                                     style={{
                                         padding: '0.875rem',
                                         borderRadius: '0.75rem',
@@ -253,6 +294,9 @@ export default function ProductDetailPage() {
                     </div>
                 </div>
             </section>
+
+            {/* Reviews Section */}
+            <ProductReviews productId={product.id} />
 
             {/* Related Products */}
             {relatedProducts.length > 0 && (

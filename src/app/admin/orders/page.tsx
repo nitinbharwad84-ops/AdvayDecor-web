@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Fragment } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Eye, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, Eye, ChevronDown, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -46,6 +46,8 @@ export default function AdminOrdersPage() {
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [orders, setOrders] = useState<OrderData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 15;
 
     useEffect(() => {
         fetch('/api/admin/orders')
@@ -83,6 +85,15 @@ export default function AdminOrdersPage() {
         const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
+
+    const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
+    const paginatedOrders = filteredOrders.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    // Reset page when filters change
+    useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter]);
 
     if (loading) {
         return (
@@ -154,7 +165,7 @@ export default function AdminOrdersPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredOrders.map((order) => (
+                            {paginatedOrders.map((order) => (
                                 <Fragment key={order.id}>
                                     <tr
                                         style={{ borderBottom: '1px solid #f0ece4', cursor: 'pointer', transition: 'background 0.2s' }}
@@ -260,6 +271,39 @@ export default function AdminOrdersPage() {
                 .admin-order-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; padding: 0.5rem; }
                 @keyframes spin { to { transform: rotate(360deg); } }
             `}</style>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '1.25rem 0', marginTop: '1rem' }}>
+                    <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        style={{
+                            padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e8e4dc',
+                            background: '#fff', cursor: currentPage === 1 ? 'default' : 'pointer',
+                            opacity: currentPage === 1 ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: '0.25rem',
+                            fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23',
+                        }}
+                    >
+                        <ChevronLeft size={14} /> Previous
+                    </button>
+                    <span style={{ fontSize: '0.85rem', color: '#64648b' }}>
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        style={{
+                            padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e8e4dc',
+                            background: '#fff', cursor: currentPage === totalPages ? 'default' : 'pointer',
+                            opacity: currentPage === totalPages ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: '0.25rem',
+                            fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23',
+                        }}
+                    >
+                        Next <ChevronRight size={14} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

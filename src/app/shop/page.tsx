@@ -2,33 +2,65 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { SlidersHorizontal, Grid3X3, LayoutGrid } from 'lucide-react';
+import { SlidersHorizontal, Grid3X3, LayoutGrid, Search, ChevronDown } from 'lucide-react';
 import ProductCard from '@/components/shop/ProductCard';
 import type { Product } from '@/types';
-
-const categories = ['All', 'Cushion'];
 
 export default function ShopPage() {
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [gridCols, setGridCols] = useState<2 | 3>(3);
     const [allProducts, setAllProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<string[]>(['All']);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
 
     useEffect(() => {
         fetch('/api/products')
             .then(res => res.json())
             .then(data => {
-                if (Array.isArray(data)) setAllProducts(data);
+                if (Array.isArray(data)) {
+                    setAllProducts(data);
+                    // Build dynamic category list from products
+                    const cats = [...new Set(data.map((p: Product) => p.category).filter(Boolean))] as string[];
+                    setCategories(['All', ...cats]);
+                }
                 setLoading(false);
             })
             .catch(() => setLoading(false));
     }, []);
 
     const filteredProducts = useMemo(() => {
-        return allProducts.filter(
+        let result = allProducts.filter(
             (p) => p.is_active && (selectedCategory === 'All' || p.category === selectedCategory)
         );
-    }, [selectedCategory, allProducts]);
+
+        // Search filter
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(
+                (p) =>
+                    p.title.toLowerCase().includes(q) ||
+                    (p.description && p.description.toLowerCase().includes(q)) ||
+                    (p.category && p.category.toLowerCase().includes(q))
+            );
+        }
+
+        // Sorting
+        switch (sortBy) {
+            case 'price_asc':
+                result = [...result].sort((a, b) => a.base_price - b.base_price);
+                break;
+            case 'price_desc':
+                result = [...result].sort((a, b) => b.base_price - a.base_price);
+                break;
+            case 'newest':
+            default:
+                break;
+        }
+
+        return result;
+    }, [selectedCategory, allProducts, searchQuery, sortBy]);
 
     return (
         <div style={{ paddingTop: 'var(--nav-height, 80px)' }}>
@@ -39,7 +71,6 @@ export default function ShopPage() {
                 padding: '4rem 0 5rem',
                 overflow: 'hidden',
             }}>
-                {/* Decorative elements */}
                 <div style={{
                     position: 'absolute', inset: 0, opacity: 0.04,
                     backgroundImage: `radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px)`,
@@ -93,12 +124,12 @@ export default function ShopPage() {
                         flexWrap: 'wrap',
                         gap: '1rem',
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#64648b' }}>
                                 <SlidersHorizontal size={16} />
                                 <span>Filter:</span>
                             </div>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 {categories.map((cat) => (
                                     <button
                                         key={cat}
@@ -121,38 +152,79 @@ export default function ShopPage() {
                             </div>
                         </div>
 
-                        <div className="hidden md:flex" style={{ alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#9e9eb8', marginRight: '0.5rem' }}>
-                                {filteredProducts.length} products
-                            </span>
-                            <button
-                                onClick={() => setGridCols(2)}
-                                style={{
-                                    padding: '0.5rem',
-                                    borderRadius: '0.5rem',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    background: gridCols === 2 ? 'rgba(10,10,35,0.1)' : 'transparent',
-                                    color: gridCols === 2 ? '#0a0a23' : '#9e9eb8',
-                                }}
-                            >
-                                <LayoutGrid size={18} />
-                            </button>
-                            <button
-                                onClick={() => setGridCols(3)}
-                                style={{
-                                    padding: '0.5rem',
-                                    borderRadius: '0.5rem',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    background: gridCols === 3 ? 'rgba(10,10,35,0.1)' : 'transparent',
-                                    color: gridCols === 3 ? '#0a0a23' : '#9e9eb8',
-                                }}
-                            >
-                                <Grid3X3 size={18} />
-                            </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            {/* Search */}
+                            <div style={{ position: 'relative' }}>
+                                <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8' }} />
+                                <input
+                                    type="text"
+                                    placeholder="Search products..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{
+                                        padding: '0.5rem 0.75rem 0.5rem 2.25rem',
+                                        borderRadius: '9999px',
+                                        border: '1px solid #e8e4dc',
+                                        fontSize: '0.8rem',
+                                        outline: 'none',
+                                        width: '180px',
+                                        background: '#fdfbf7',
+                                        transition: 'border-color 0.2s',
+                                    }}
+                                />
+                            </div>
+
+                            {/* Sort */}
+                            <div style={{ position: 'relative' }}>
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value as 'newest' | 'price_asc' | 'price_desc')}
+                                    style={{
+                                        padding: '0.5rem 2rem 0.5rem 0.75rem',
+                                        borderRadius: '9999px',
+                                        border: '1px solid #e8e4dc',
+                                        fontSize: '0.8rem',
+                                        outline: 'none',
+                                        background: '#fdfbf7',
+                                        cursor: 'pointer',
+                                        appearance: 'none',
+                                        WebkitAppearance: 'none',
+                                    }}
+                                >
+                                    <option value="newest">Newest</option>
+                                    <option value="price_asc">Price: Low → High</option>
+                                    <option value="price_desc">Price: High → Low</option>
+                                </select>
+                                <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#9e9eb8', pointerEvents: 'none' }} />
+                            </div>
+
+                            <div className="hidden md:flex" style={{ alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.8rem', color: '#9e9eb8', marginRight: '0.5rem' }}>
+                                    {filteredProducts.length} products
+                                </span>
+                                <button
+                                    onClick={() => setGridCols(2)}
+                                    style={{
+                                        padding: '0.5rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        background: gridCols === 2 ? 'rgba(10,10,35,0.1)' : 'transparent',
+                                        color: gridCols === 2 ? '#0a0a23' : '#9e9eb8',
+                                    }}
+                                >
+                                    <LayoutGrid size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setGridCols(3)}
+                                    style={{
+                                        padding: '0.5rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        background: gridCols === 3 ? 'rgba(10,10,35,0.1)' : 'transparent',
+                                        color: gridCols === 3 ? '#0a0a23' : '#9e9eb8',
+                                    }}
+                                >
+                                    <Grid3X3 size={18} />
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -181,7 +253,9 @@ export default function ShopPage() {
 
                     {!loading && filteredProducts.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '5rem 0' }}>
-                            <p style={{ color: '#9e9eb8', fontSize: '1.1rem' }}>No products found in this category.</p>
+                            <p style={{ color: '#9e9eb8', fontSize: '1.1rem' }}>
+                                {searchQuery ? `No products found for "${searchQuery}"` : 'No products found in this category.'}
+                            </p>
                         </div>
                     )}
                 </div>

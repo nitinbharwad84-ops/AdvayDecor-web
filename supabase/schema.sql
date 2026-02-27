@@ -455,3 +455,66 @@ ALTER TABLE order_items ADD CONSTRAINT order_items_product_id_fkey FOREIGN KEY (
 
 ALTER TABLE order_items DROP CONSTRAINT IF EXISTS order_items_variant_id_fkey;
 ALTER TABLE order_items ADD CONSTRAINT order_items_variant_id_fkey FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE SET NULL;
+
+-- ============================================
+-- PRODUCT REVIEWS & RATINGS
+-- ============================================
+CREATE TABLE IF NOT EXISTS product_reviews (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  review_text TEXT,
+  reviewer_name TEXT,
+  is_approved BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(product_id, user_id)
+);
+
+ALTER TABLE product_reviews ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view approved reviews" ON product_reviews;
+CREATE POLICY "Anyone can view approved reviews" ON product_reviews FOR SELECT USING (is_approved = TRUE);
+
+DROP POLICY IF EXISTS "Users can insert own reviews" ON product_reviews;
+CREATE POLICY "Users can insert own reviews" ON product_reviews FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own reviews" ON product_reviews;
+CREATE POLICY "Users can update own reviews" ON product_reviews FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own reviews" ON product_reviews;
+CREATE POLICY "Users can delete own reviews" ON product_reviews FOR DELETE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can manage all reviews" ON product_reviews;
+CREATE POLICY "Admins can manage all reviews" ON product_reviews FOR ALL USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_product_reviews_product ON product_reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_reviews_user ON product_reviews(user_id);
+
+-- ============================================
+-- WISHLIST
+-- ============================================
+CREATE TABLE IF NOT EXISTS wishlists (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, product_id)
+);
+
+ALTER TABLE wishlists ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own wishlist" ON wishlists;
+CREATE POLICY "Users can view own wishlist" ON wishlists FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own wishlist" ON wishlists;
+CREATE POLICY "Users can insert own wishlist" ON wishlists FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own wishlist" ON wishlists;
+CREATE POLICY "Users can delete own wishlist" ON wishlists FOR DELETE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can manage all wishlists" ON wishlists;
+CREATE POLICY "Admins can manage all wishlists" ON wishlists FOR ALL USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_wishlists_user ON wishlists(user_id);
+CREATE INDEX IF NOT EXISTS idx_wishlists_product ON wishlists(product_id);
