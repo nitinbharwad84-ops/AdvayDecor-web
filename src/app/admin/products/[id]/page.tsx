@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Save, Plus, Trash2, Upload, ImageIcon, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import type { Product } from '@/types';
+import type { Product, Category } from '@/types';
 
 const inputStyle: React.CSSProperties = {
     width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem',
@@ -39,9 +39,18 @@ export default function AdminProductEditPage() {
 
     const [variants, setVariants] = useState<{ id: string; variant_name: string; sku: string; price: string; stock_quantity: string }[]>([]);
     const [existingImages, setExistingImages] = useState<{ id: string; image_url: string }[]>([]);
+    const [categoriesList, setCategoriesList] = useState<Category[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
+
+    // Fetch categories
+    useEffect(() => {
+        fetch('/api/admin/categories')
+            .then(res => res.json())
+            .then(data => setCategoriesList(Array.isArray(data) ? data : []))
+            .catch(() => setCategoriesList([]));
+    }, []);
 
     // Fetch existing product data
     useEffect(() => {
@@ -369,8 +378,14 @@ export default function AdminProductEditPage() {
                                 <div>
                                     <label style={labelStyle}>Category</label>
                                     <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={inputStyle}>
-                                        <option value="Cushion">Cushion</option>
-                                        <option value="Frame">Frame</option>
+                                        {categoriesList.length === 0 && <option value="Cushion">Cushion</option>}
+                                        {categoriesList.filter(c => c.is_active).map(c => (
+                                            <option key={c.id} value={c.name}>{c.name}</option>
+                                        ))}
+                                        {/* Keep existing category even if not active/present */}
+                                        {form.category && !categoriesList.some(c => c.name === form.category) && (
+                                            <option value={form.category}>{form.category} (Legacy)</option>
+                                        )}
                                     </select>
                                 </div>
                             </div>

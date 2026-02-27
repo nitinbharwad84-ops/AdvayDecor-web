@@ -355,3 +355,32 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
 
 -- Refresh the schema cache
 NOTIFY pgrst, 'reload schema';
+
+-- ============================================
+-- 15. CATEGORIES
+-- ============================================
+CREATE TABLE IF NOT EXISTS categories (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT,
+  image_url TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can read active categories" ON categories;
+CREATE POLICY "Anyone can read active categories" ON categories FOR SELECT USING (is_active = TRUE);
+
+DROP POLICY IF EXISTS "Admins can manage categories" ON categories;
+CREATE POLICY "Admins can manage categories" ON categories FOR ALL USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
+
+-- Insert defaults if needed
+INSERT INTO categories (name, slug, description) VALUES
+  ('Cushion', 'cushion', 'Decorative cushions and pillows'),
+  ('Frame', 'frame', 'Photo frames and wall art')
+ON CONFLICT (name) DO NOTHING;
