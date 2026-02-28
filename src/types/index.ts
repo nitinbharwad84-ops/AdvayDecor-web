@@ -89,6 +89,7 @@ export interface ShippingAddress {
   city: string;
   state: string;
   pincode: string;
+  email?: string;
 }
 
 export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';

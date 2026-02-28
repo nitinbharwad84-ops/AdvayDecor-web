@@ -47,6 +47,7 @@ export default function CheckoutPage() {
         city: '',
         state: '',
         pincode: '',
+        email: '',
     });
     const [orderId, setOrderId] = useState('');
     const [isPlacing, setIsPlacing] = useState(false);
@@ -167,6 +168,7 @@ export default function CheckoutPage() {
                 city: '',
                 state: '',
                 pincode: '',
+                email: '',
             });
         } else {
             const selected = savedAddresses.find((a) => a.id === addrId);
@@ -179,6 +181,7 @@ export default function CheckoutPage() {
                     city: selected.city,
                     state: selected.state,
                     pincode: selected.postal_code,
+                    email: user?.email || '',
                 });
             }
         }
@@ -205,7 +208,7 @@ export default function CheckoutPage() {
             body: JSON.stringify({
                 guest_info: {
                     name: address.full_name,
-                    email: '',
+                    email: address.email || user?.email || '',
                     phone: address.phone,
                 },
                 shipping_address: address,
@@ -540,6 +543,17 @@ export default function CheckoutPage() {
                                                 onChange={(e) => setAddress({ ...address, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
                                                 style={inputStyle}
                                                 placeholder="400001"
+                                            />
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Email Address *</label>
+                                            <input
+                                                required
+                                                type="email"
+                                                value={address.email}
+                                                onChange={(e) => setAddress({ ...address, email: e.target.value })}
+                                                style={inputStyle}
+                                                placeholder="you@example.com"
                                             />
                                         </div>
                                     </div>
