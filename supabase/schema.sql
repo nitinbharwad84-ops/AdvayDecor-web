@@ -60,7 +60,8 @@ CREATE TABLE IF NOT EXISTS products (
   slug TEXT UNIQUE NOT NULL,
   description TEXT,
   base_price DECIMAL(10,2) NOT NULL,
-  category TEXT DEFAULT 'Cushion',
+  category TEXT DEFAULT 'Cushion',  -- Legacy text field, kept for backwards compatibility
+  category_id UUID, -- Will be constrained below after categories table is created
   has_variants BOOLEAN DEFAULT FALSE,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -132,8 +133,8 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   order_id UUID REFERENCES orders(id) ON DELETE CASCADE NOT NULL,
-  product_id UUID REFERENCES products(id),
-  variant_id UUID REFERENCES product_variants(id),
+  product_id UUID REFERENCES products(id) ON DELETE SET NULL,
+  variant_id UUID REFERENCES product_variants(id) ON DELETE SET NULL,
   product_title TEXT NOT NULL,
   variant_name TEXT,
   quantity INTEGER NOT NULL DEFAULT 1,
@@ -352,6 +353,137 @@ CREATE POLICY "Admins can manage coupons" ON coupons FOR ALL USING (public.is_ad
 
 -- Add the missing phone column to the profiles table
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
+
+-- ============================================
+-- 15. CATEGORIES
+-- ============================================
+CREATE TABLE IF NOT EXISTS categories (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT,
+  image_url TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can read active categories" ON categories;
+CREATE POLICY "Anyone can read active categories" ON categories FOR SELECT USING (is_active = TRUE);
+
+DROP POLICY IF EXISTS "Admins can manage categories" ON categories;
+CREATE POLICY "Admins can manage categories" ON categories FOR ALL USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
+
+-- Insert defaults if needed
+INSERT INTO categories (name, slug, description) VALUES
+  ('Cushion', 'cushion', 'Decorative cushions and pillows'),
+  ('Frame', 'frame', 'Photo frames and wall art')
+ON CONFLICT (name) DO NOTHING;
+
+-- Now add the foreign key to products
+ALTER TABLE products ADD CONSTRAINT products_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL;
+
+-- ============================================
+-- 16. USER ADDRESSES (Saved Shipping Addresses)
+-- ============================================
+CREATE TABLE IF NOT EXISTS user_addresses (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  full_name TEXT NOT NULL,
+  phone TEXT,
+  street_address TEXT NOT NULL,
+  city TEXT NOT NULL,
+  state TEXT NOT NULL,
+  postal_code TEXT NOT NULL,
+  country TEXT DEFAULT 'India',
+  is_default BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE user_addresses ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own addresses" ON user_addresses;
+CREATE POLICY "Users can view own addresses" ON user_addresses FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own addresses" ON user_addresses;
+CREATE POLICY "Users can insert own addresses" ON user_addresses FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own addresses" ON user_addresses;
+CREATE POLICY "Users can update own addresses" ON user_addresses FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own addresses" ON user_addresses;
+CREATE POLICY "Users can delete own addresses" ON user_addresses FOR DELETE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can manage all addresses" ON user_addresses;
+CREATE POLICY "Admins can manage all addresses" ON user_addresses FOR ALL USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_user_addresses_user ON user_addresses(user_id);
+
+-- ============================================
+-- 17. PRODUCT REVIEWS & RATINGS
+-- ============================================
+CREATE TABLE IF NOT EXISTS product_reviews (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  review_text TEXT,
+  reviewer_name TEXT,
+  is_approved BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(product_id, user_id)
+);
+
+ALTER TABLE product_reviews ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view approved reviews" ON product_reviews;
+CREATE POLICY "Anyone can view approved reviews" ON product_reviews FOR SELECT USING (is_approved = TRUE);
+
+DROP POLICY IF EXISTS "Users can insert own reviews" ON product_reviews;
+CREATE POLICY "Users can insert own reviews" ON product_reviews FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own reviews" ON product_reviews;
+CREATE POLICY "Users can update own reviews" ON product_reviews FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own reviews" ON product_reviews;
+CREATE POLICY "Users can delete own reviews" ON product_reviews FOR DELETE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can manage all reviews" ON product_reviews;
+CREATE POLICY "Admins can manage all reviews" ON product_reviews FOR ALL USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_product_reviews_product ON product_reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_reviews_user ON product_reviews(user_id);
+
+-- ============================================
+-- 18. WISHLIST
+-- ============================================
+CREATE TABLE IF NOT EXISTS wishlists (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, product_id)
+);
+
+ALTER TABLE wishlists ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own wishlist" ON wishlists;
+CREATE POLICY "Users can view own wishlist" ON wishlists FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own wishlist" ON wishlists;
+CREATE POLICY "Users can insert own wishlist" ON wishlists FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own wishlist" ON wishlists;
+CREATE POLICY "Users can delete own wishlist" ON wishlists FOR DELETE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can manage all wishlists" ON wishlists;
+CREATE POLICY "Admins can manage all wishlists" ON wishlists FOR ALL USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_wishlists_user ON wishlists(user_id);
+CREATE INDEX IF NOT EXISTS idx_wishlists_product ON wishlists(product_id);
 
 -- Refresh the schema cache
 NOTIFY pgrst, 'reload schema';

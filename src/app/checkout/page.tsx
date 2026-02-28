@@ -4,15 +4,30 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ChevronRight, MapPin, CreditCard, CheckCircle, ShoppingBag, ArrowLeft, Tag, X } from 'lucide-react';
+import { ChevronRight, MapPin, CreditCard, CheckCircle, ShoppingBag, ArrowLeft, Tag, X, Plus } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 import type { ShippingAddress } from '@/types';
+import { createClient } from '@/lib/supabase';
+import { useUserAuthStore } from '@/lib/auth-store';
 
 type Step = 'shipping' | 'payment' | 'confirmation';
 
+interface Address {
+    id: string;
+    full_name: string;
+    phone: string;
+    street_address: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+    is_default: boolean;
+}
+
 export default function CheckoutPage() {
     const { items, getSubtotal, clearCart } = useCartStore();
+    const { user, isAuthenticated } = useUserAuthStore();
     const [step, setStep] = useState<Step>('shipping');
     const [mounted, setMounted] = useState(false);
     const [shippingFee] = useState(50);
@@ -34,7 +49,49 @@ export default function CheckoutPage() {
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
     const [couponError, setCouponError] = useState('');
 
-    useEffect(() => setMounted(true), []);
+    // Saved Addresses
+    const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | 'new'>('new');
+    const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+
+        const fetchAddresses = async () => {
+            if (!isAuthenticated || !user?.id) return;
+            setIsLoadingAddresses(true);
+            try {
+                const supabase = createClient();
+                const { data, error } = await supabase
+                    .from('user_addresses')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('is_default', { ascending: false })
+                    .order('created_at', { ascending: false });
+
+                if (data && data.length > 0) {
+                    setSavedAddresses(data);
+                    setSelectedAddressId(data[0].id);
+                    // Pre-fill the address form with the default address so placement works smoothly
+                    setAddress({
+                        full_name: data[0].full_name,
+                        phone: data[0].phone || '',
+                        address_line1: data[0].street_address,
+                        address_line2: '',
+                        city: data[0].city,
+                        state: data[0].state,
+                        pincode: data[0].postal_code,
+                    });
+                }
+            } catch (err) {
+                console.error("Error fetching addresses:", err);
+            } finally {
+                setIsLoadingAddresses(false);
+            }
+        };
+
+        fetchAddresses();
+    }, [isAuthenticated, user]);
 
     if (!mounted) {
         return (
@@ -76,6 +133,34 @@ export default function CheckoutPage() {
 
     const handleRemoveCoupon = () => {
         setAppliedCoupon(null);
+    };
+
+    const handleAddressSelect = (addrId: string) => {
+        setSelectedAddressId(addrId);
+        if (addrId === 'new') {
+            setAddress({
+                full_name: '',
+                phone: '',
+                address_line1: '',
+                address_line2: '',
+                city: '',
+                state: '',
+                pincode: '',
+            });
+        } else {
+            const selected = savedAddresses.find((a) => a.id === addrId);
+            if (selected) {
+                setAddress({
+                    full_name: selected.full_name,
+                    phone: selected.phone || '',
+                    address_line1: selected.street_address,
+                    address_line2: '',
+                    city: selected.city,
+                    state: selected.state,
+                    pincode: selected.postal_code,
+                });
+            }
+        }
     };
 
     const handleShippingSubmit = (e: React.FormEvent) => {
@@ -223,77 +308,132 @@ export default function CheckoutPage() {
                                     Shipping Address
                                 </h2>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: '1rem' }}>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Full Name *</label>
-                                        <input
-                                            required
-                                            value={address.full_name}
-                                            onChange={(e) => setAddress({ ...address, full_name: e.target.value })}
-                                            style={inputStyle}
-                                            placeholder="Enter your full name"
-                                        />
+                                {isAuthenticated && savedAddresses.length > 0 && (
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.75rem' }}>Saved Addresses</h3>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            {savedAddresses.map((addr) => (
+                                                <div
+                                                    key={addr.id}
+                                                    onClick={() => handleAddressSelect(addr.id)}
+                                                    style={{
+                                                        padding: '1rem',
+                                                        borderRadius: '0.75rem',
+                                                        border: selectedAddressId === addr.id ? '2px solid #00b4d8' : '1px solid #e8e4dc',
+                                                        background: selectedAddressId === addr.id ? 'rgba(0,180,216,0.02)' : '#fdfbf7',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s',
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                        <span style={{ fontWeight: 600, color: '#0a0a23', fontSize: '0.9rem' }}>{addr.full_name}</span>
+                                                        {addr.is_default && (
+                                                            <span style={{ fontSize: '0.7rem', background: '#0a0a23', color: '#fff', padding: '0.125rem 0.5rem', borderRadius: '1rem' }}>Default</span>
+                                                        )}
+                                                    </div>
+                                                    <p style={{ fontSize: '0.8rem', color: '#64648b', lineHeight: 1.5 }}>
+                                                        {addr.street_address}, {addr.city}, {addr.state} {addr.postal_code}
+                                                    </p>
+                                                    {addr.phone && <p style={{ fontSize: '0.8rem', color: '#64648b', marginTop: '0.25rem' }}>Phone: {addr.phone}</p>}
+                                                </div>
+                                            ))}
+
+                                            <div
+                                                onClick={() => handleAddressSelect('new')}
+                                                style={{
+                                                    padding: '1rem',
+                                                    borderRadius: '0.75rem',
+                                                    border: selectedAddressId === 'new' ? '2px solid #00b4d8' : '1px dashed #cbd5e1',
+                                                    background: selectedAddressId === 'new' ? 'rgba(0,180,216,0.02)' : 'transparent',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    color: selectedAddressId === 'new' ? '#00b4d8' : '#64748b',
+                                                    fontWeight: 500,
+                                                    fontSize: '0.9rem',
+                                                }}
+                                            >
+                                                <Plus size={16} />
+                                                Add a new address
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Phone Number *</label>
-                                        <input
-                                            required
-                                            value={address.phone}
-                                            onChange={(e) => setAddress({ ...address, phone: e.target.value })}
-                                            style={inputStyle}
-                                            placeholder="+91 98765 43210"
-                                        />
+                                )}
+
+                                {selectedAddressId === 'new' && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: '1rem' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Full Name *</label>
+                                            <input
+                                                required
+                                                value={address.full_name}
+                                                onChange={(e) => setAddress({ ...address, full_name: e.target.value })}
+                                                style={inputStyle}
+                                                placeholder="Enter your full name"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Phone Number *</label>
+                                            <input
+                                                required
+                                                value={address.phone}
+                                                onChange={(e) => setAddress({ ...address, phone: e.target.value })}
+                                                style={inputStyle}
+                                                placeholder="+91 98765 43210"
+                                            />
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Address Line 1 *</label>
+                                            <input
+                                                required
+                                                value={address.address_line1}
+                                                onChange={(e) => setAddress({ ...address, address_line1: e.target.value })}
+                                                style={inputStyle}
+                                                placeholder="Street address"
+                                            />
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Address Line 2</label>
+                                            <input
+                                                value={address.address_line2}
+                                                onChange={(e) => setAddress({ ...address, address_line2: e.target.value })}
+                                                style={inputStyle}
+                                                placeholder="Apartment, suite, etc."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>City *</label>
+                                            <input
+                                                required
+                                                value={address.city}
+                                                onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                                                style={inputStyle}
+                                                placeholder="City"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>State *</label>
+                                            <input
+                                                required
+                                                value={address.state}
+                                                onChange={(e) => setAddress({ ...address, state: e.target.value })}
+                                                style={inputStyle}
+                                                placeholder="State"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Pincode *</label>
+                                            <input
+                                                required
+                                                value={address.pincode}
+                                                onChange={(e) => setAddress({ ...address, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                                                style={inputStyle}
+                                                placeholder="400001"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="sm:col-span-2">
-                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Address Line 1 *</label>
-                                        <input
-                                            required
-                                            value={address.address_line1}
-                                            onChange={(e) => setAddress({ ...address, address_line1: e.target.value })}
-                                            style={inputStyle}
-                                            placeholder="Street address"
-                                        />
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Address Line 2</label>
-                                        <input
-                                            value={address.address_line2}
-                                            onChange={(e) => setAddress({ ...address, address_line2: e.target.value })}
-                                            style={inputStyle}
-                                            placeholder="Apartment, suite, etc."
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>City *</label>
-                                        <input
-                                            required
-                                            value={address.city}
-                                            onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                                            style={inputStyle}
-                                            placeholder="City"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>State *</label>
-                                        <input
-                                            required
-                                            value={address.state}
-                                            onChange={(e) => setAddress({ ...address, state: e.target.value })}
-                                            style={inputStyle}
-                                            placeholder="State"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Pincode *</label>
-                                        <input
-                                            required
-                                            value={address.pincode}
-                                            onChange={(e) => setAddress({ ...address, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-                                            style={inputStyle}
-                                            placeholder="400001"
-                                        />
-                                    </div>
-                                </div>
+                                )}
 
                                 <button
                                     type="submit"
