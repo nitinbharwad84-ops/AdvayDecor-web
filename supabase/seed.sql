@@ -3,25 +3,21 @@
 -- This inserts sample products, variants, images, and orders for testing.
 
 -- ============================================
--- 1. HELPERS: GET CATEGORY IDS
+-- 1. ENSURE CATEGORIES EXIST
 -- ============================================
--- (We'll use fixed UUIDs for simplicity in this seed file)
--- Cushion ID: c0000000-0000-0000-0000-000000000001
--- Frame ID:   f0000000-0000-0000-0000-000000000002
-
-INSERT INTO categories (id, name, slug, description) VALUES
-  ('c0000000-0000-0000-0000-000000000001', 'Cushion', 'cushion', 'Decorative cushions and pillows'),
-  ('f0000000-0000-0000-0000-000000000002', 'Frame', 'frame', 'Photo frames and wall art')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
+INSERT INTO categories (name, slug, description) VALUES
+  ('Cushion', 'cushion', 'Decorative cushions and pillows'),
+  ('Frame', 'frame', 'Photo frames and wall art')
+ON CONFLICT (name) DO UPDATE SET slug = EXCLUDED.slug, description = EXCLUDED.description;
 
 -- ============================================
--- 2. PRODUCTS
+-- 2. PRODUCTS (use subqueries for real category IDs)
 -- ============================================
 INSERT INTO products (id, title, slug, description, base_price, category_id, has_variants, is_active) VALUES
-  ('a1b2c3d4-0001-4000-8000-000000000001', 'Multicolor Flower Cushion', 'multicolor-flower-cushion', 'A vibrant, hand-stitched floral cushion that brings a burst of color to any room.', 999, 'c0000000-0000-0000-0000-000000000001', TRUE, TRUE),
-  ('a1b2c3d4-0002-4000-8000-000000000002', 'Bohemian Tasseled Cushion', 'bohemian-tasseled-cushion', 'Embrace bohemian chic with this beautifully tasseled cushion cover.', 799, 'c0000000-0000-0000-0000-000000000001', TRUE, TRUE),
-  ('a1b2c3d4-0003-4000-8000-000000000003', 'Rustic Wooden Frame', 'rustic-wooden-frame', 'Handcrafted solid oak frame with a vintage finish. Perfect for family portraits or travel photography.', 1299, 'f0000000-0000-0000-0000-000000000002', TRUE, TRUE),
-  ('a1b2c3d4-0004-4000-8000-000000000004', 'Velvet Royal Cushion', 'velvet-royal-cushion', 'Indulge in luxury with our velvet royal cushion. Features sumptuous velvet fabric.', 1499, 'c0000000-0000-0000-0000-000000000001', TRUE, TRUE)
+  ('a1b2c3d4-0001-4000-8000-000000000001', 'Multicolor Flower Cushion', 'multicolor-flower-cushion', 'A vibrant, hand-stitched floral cushion that brings a burst of color to any room.', 999, (SELECT id FROM categories WHERE name = 'Cushion'), TRUE, TRUE),
+  ('a1b2c3d4-0002-4000-8000-000000000002', 'Bohemian Tasseled Cushion', 'bohemian-tasseled-cushion', 'Embrace bohemian chic with this beautifully tasseled cushion cover.', 799, (SELECT id FROM categories WHERE name = 'Cushion'), TRUE, TRUE),
+  ('a1b2c3d4-0003-4000-8000-000000000003', 'Rustic Wooden Frame', 'rustic-wooden-frame', 'Handcrafted solid oak frame with a vintage finish. Perfect for family portraits or travel photography.', 1299, (SELECT id FROM categories WHERE name = 'Frame'), TRUE, TRUE),
+  ('a1b2c3d4-0004-4000-8000-000000000004', 'Velvet Royal Cushion', 'velvet-royal-cushion', 'Indulge in luxury with our velvet royal cushion. Features sumptuous velvet fabric.', 1499, (SELECT id FROM categories WHERE name = 'Cushion'), TRUE, TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================

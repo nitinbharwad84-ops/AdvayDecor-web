@@ -22,23 +22,27 @@ CREATE TABLE IF NOT EXISTS public.user_addresses (
 -- Turn on Row Level Security
 ALTER TABLE public.user_addresses ENABLE ROW LEVEL SECURITY;
 
--- Policies
+-- Policies (drop first to make script re-runnable)
 -- 1. Users can view their own addresses
+DROP POLICY IF EXISTS "Users can view their own addresses" ON public.user_addresses;
 CREATE POLICY "Users can view their own addresses" 
 ON public.user_addresses FOR SELECT
 USING (auth.uid() = user_id);
 
 -- 2. Users can insert their own addresses
+DROP POLICY IF EXISTS "Users can insert their own addresses" ON public.user_addresses;
 CREATE POLICY "Users can insert their own addresses" 
 ON public.user_addresses FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 
 -- 3. Users can update their own addresses
+DROP POLICY IF EXISTS "Users can update their own addresses" ON public.user_addresses;
 CREATE POLICY "Users can update their own addresses" 
 ON public.user_addresses FOR UPDATE
 USING (auth.uid() = user_id);
 
 -- 4. Users can delete their own addresses
+DROP POLICY IF EXISTS "Users can delete their own addresses" ON public.user_addresses;
 CREATE POLICY "Users can delete their own addresses" 
 ON public.user_addresses FOR DELETE
 USING (auth.uid() = user_id);
@@ -52,6 +56,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS on_address_updated ON public.user_addresses;
 CREATE TRIGGER on_address_updated
   BEFORE UPDATE ON public.user_addresses
   FOR EACH ROW
