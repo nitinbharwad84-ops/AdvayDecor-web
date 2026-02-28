@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Package, ArrowRight, LogOut, Clock, PenLine, Save, X, Phone, MessageSquare, HelpCircle, ChevronRight, RefreshCw, MapPin, Plus, Trash2 } from 'lucide-react';
+import { User, Mail, Package, ArrowRight, LogOut, Clock, PenLine, Save, X, Phone, MessageSquare, HelpCircle, ChevronRight, RefreshCw, MapPin, Plus, Trash2, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase';
 import { useUserAuthStore } from '@/lib/auth-store';
@@ -57,6 +57,19 @@ interface FaqQuestion {
     created_at: string;
 }
 
+interface WishlistItem {
+    id: string;
+    created_at: string;
+    product: {
+        id: string;
+        title: string;
+        slug: string;
+        base_price: number;
+        category: string;
+        images: { image_url: string }[];
+    };
+}
+
 export default function ProfilePage() {
     const router = useRouter();
     const { user, isAuthenticated, clearUser, setUser } = useUserAuthStore();
@@ -64,6 +77,7 @@ export default function ProfilePage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [messages, setMessages] = useState<ContactMessage[]>([]);
     const [faqQuestions, setFaqQuestions] = useState<FaqQuestion[]>([]);
+    const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
 
@@ -94,10 +108,11 @@ export default function ProfilePage() {
 
     const tabs = [
         { id: 'profile', name: 'Profile Details', icon: User },
-        { id: 'addresses', name: 'Saved Addresses', icon: MapPin },
         { id: 'orders', name: 'Order History', icon: Package },
+        { id: 'wishlist', name: 'My Wishlist', icon: Heart },
+        { id: 'addresses', name: 'Saved Addresses', icon: MapPin },
         { id: 'support', name: 'Support Messages', icon: MessageSquare },
-        { id: 'faq', name: 'My FAQ Questions', icon: HelpCircle },
+        { id: 'faq', name: 'My FAQ', icon: HelpCircle },
     ];
 
     useEffect(() => {
@@ -188,6 +203,17 @@ export default function ProfilePage() {
                     console.error('Error fetching addresses:', addressError);
                 } else {
                     setAddresses(addressData || []);
+                }
+
+                // 6. Fetch Wishlist
+                try {
+                    const wlRes = await fetch('/api/wishlist');
+                    if (wlRes.ok) {
+                        const wlData = await wlRes.json();
+                        setWishlist(wlData || []);
+                    }
+                } catch (err) {
+                    console.error('Error fetching wishlist:', err);
                 }
 
             } catch (error) {
@@ -482,6 +508,17 @@ export default function ProfilePage() {
             toast.success('Default address updated');
         } catch (error: any) {
             toast.error('Failed to set default address');
+        }
+    };
+
+    const handleRemoveFromWishlist = async (id: string, productId: string) => {
+        try {
+            const supabase = createClient();
+            await supabase.from('wishlists').delete().eq('id', id).eq('user_id', user?.id);
+            setWishlist(wishlist.filter(w => w.id !== id));
+            toast.success('Removed from wishlist');
+        } catch (error: any) {
+            toast.error('Failed to remove item');
         }
     };
 
@@ -1002,6 +1039,72 @@ export default function ProfilePage() {
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
+                                    </div>
+                                )}
+
+                                {activeTab === 'wishlist' && (
+                                    <div style={{ background: '#fff', borderRadius: '1.25rem', padding: '2rem', border: '1px solid #f0ece4' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                                            <Heart size={24} style={{ color: '#00b4d8' }} />
+                                            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23' }}>My Wishlist</h2>
+                                        </div>
+
+                                        {wishlist.length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '4rem 1rem', background: '#f8fafc', borderRadius: '1rem', border: '1px dashed #cbd5e1' }}>
+                                                <Heart size={48} style={{ color: '#cbd5e1', margin: '0 auto 1rem' }} />
+                                                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Your wishlist is empty</h3>
+                                                <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>Save items you love and come back to them later.</p>
+                                                <Link href="/shop" style={{ display: 'inline-block', padding: '0.75rem 1.5rem', background: '#0a0a23', color: '#fff', borderRadius: '0.75rem', fontWeight: 600, textDecoration: 'none' }}>
+                                                    Explore Products
+                                                </Link>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2" style={{ gap: '1.5rem' }}>
+                                                {wishlist.map((item) => (
+                                                    <div key={item.id} style={{ border: '1px solid #f0ece4', borderRadius: '1rem', overflow: 'hidden', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+                                                        <Link href={`/product/${item.product.slug}`} style={{ padding: '1rem', background: '#f8fafc', display: 'block', textDecoration: 'none', position: 'relative', aspectRatio: '1/1' }}>
+                                                            {item.product.images?.[0] ? (
+                                                                <Image
+                                                                    src={item.product.images[0].image_url}
+                                                                    alt={item.product.title}
+                                                                    fill
+                                                                    sizes="(max-width: 768px) 100vw, 300px"
+                                                                    style={{ objectFit: 'contain' }}
+                                                                />
+                                                            ) : (
+                                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
+                                                                    <Package size={32} />
+                                                                </div>
+                                                            )}
+                                                        </Link>
+                                                        <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                                            <p style={{ fontSize: '0.75rem', color: '#00b4d8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                                                                {item.product.category}
+                                                            </p>
+                                                            <Link href={`/product/${item.product.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                                                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                                    {item.product.title}
+                                                                </h3>
+                                                            </Link>
+                                                            <p style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0a0a23', marginTop: 'auto', marginBottom: '1rem' }}>
+                                                                {formatCurrency(item.product.base_price)}
+                                                            </p>
+                                                            <button
+                                                                onClick={() => handleRemoveFromWishlist(item.id, item.product.id)}
+                                                                style={{
+                                                                    width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: 'rgba(239,68,68,0.05)',
+                                                                    color: '#ef4444', border: 'none', fontWeight: 600, cursor: 'pointer',
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                                                                }}
+                                                            >
+                                                                <Trash2 size={16} />
+                                                                Remove
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
