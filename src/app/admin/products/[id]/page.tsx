@@ -34,7 +34,7 @@ export default function AdminProductEditPage() {
 
     const [form, setForm] = useState({
         title: '', slug: '', description: '', base_price: '',
-        category: 'Cushion', has_variants: false, is_active: true,
+        category: '', has_variants: false, is_active: true,
     });
 
     const [variants, setVariants] = useState<{ id: string; variant_name: string; sku: string; price: string; stock_quantity: string }[]>([]);
@@ -42,6 +42,23 @@ export default function AdminProductEditPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
+    const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+
+    // Fetch categories from database
+    useEffect(() => {
+        fetch('/api/admin/categories')
+            .then(res => res.json())
+            .then((data) => {
+                if (Array.isArray(data)) {
+                    setCategories(data);
+                    // If creating new product and no category selected, default to the first
+                    if (isNew && data.length > 0) {
+                        setForm(prev => ({ ...prev, category: data[0].name }));
+                    }
+                }
+            })
+            .catch(() => {/* ignore */ });
+    }, [isNew]);
 
     // Fetch existing product data
     useEffect(() => {
@@ -369,8 +386,13 @@ export default function AdminProductEditPage() {
                                 <div>
                                     <label style={labelStyle}>Category</label>
                                     <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={inputStyle}>
-                                        <option value="Cushion">Cushion</option>
-                                        <option value="Frame">Frame</option>
+                                        {categories.length === 0 ? (
+                                            <option value="">Loading categories...</option>
+                                        ) : (
+                                            categories.map(cat => (
+                                                <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                            ))
+                                        )}
                                     </select>
                                 </div>
                             </div>

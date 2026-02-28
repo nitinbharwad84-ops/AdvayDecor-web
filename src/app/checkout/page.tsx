@@ -4,14 +4,22 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ChevronRight, MapPin, CreditCard, CheckCircle, ShoppingBag, ArrowLeft, Tag, X, Plus } from 'lucide-react';
+import { ChevronRight, MapPin, CreditCard, CheckCircle, ShoppingBag, ArrowLeft, Tag, X, Plus, Loader2 } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 import type { ShippingAddress } from '@/types';
 import { createClient } from '@/lib/supabase';
 import { useUserAuthStore } from '@/lib/auth-store';
+import toast from 'react-hot-toast';
+
+declare global {
+    interface Window {
+        Razorpay: any;
+    }
+}
 
 type Step = 'shipping' | 'payment' | 'confirmation';
+type PaymentMethod = 'COD' | 'Razorpay';
 
 interface Address {
     id: string;
@@ -53,6 +61,20 @@ export default function CheckoutPage() {
     const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<string | 'new'>('new');
     const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD');
+    const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+
+    // Load Razorpay SDK
+    useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => setRazorpayLoaded(true);
+        document.body.appendChild(script);
+        return () => {
+            document.body.removeChild(script);
+        };
+    }, []);
 
     useEffect(() => {
         setMounted(true);
@@ -72,7 +94,6 @@ export default function CheckoutPage() {
                 if (data && data.length > 0) {
                     setSavedAddresses(data);
                     setSelectedAddressId(data[0].id);
-                    // Pre-fill the address form with the default address so placement works smoothly
                     setAddress({
                         full_name: data[0].full_name,
                         phone: data[0].phone || '',
@@ -168,49 +189,138 @@ export default function CheckoutPage() {
         setStep('payment');
     };
 
+    const placeOrderOnServer = async (pm: PaymentMethod, razorpayPaymentId?: string) => {
+        const orderItems = items.map((item) => ({
+            product_id: item.product.id,
+            variant_id: item.variant?.id || null,
+            product_title: item.product.title,
+            variant_name: item.variant?.variant_name || null,
+            quantity: item.quantity,
+            unit_price: item.variant?.price ?? item.product.base_price,
+        }));
+
+        const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                guest_info: {
+                    name: address.full_name,
+                    email: '',
+                    phone: address.phone,
+                },
+                shipping_address: address,
+                items: orderItems,
+                payment_method: pm,
+                shipping_fee: shippingFee,
+                coupon_code: appliedCoupon?.code || null,
+                discount_amount: appliedCoupon?.discount_amount || 0,
+                ...(razorpayPaymentId ? { razorpay_payment_id: razorpayPaymentId } : {}),
+            }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.order_id) {
+            setOrderId(data.order_id.substring(0, 8).toUpperCase());
+            setStep('confirmation');
+            clearCart();
+        } else {
+            toast.error(data.error || 'Failed to place order. Please try again.');
+        }
+    };
+
     const handlePlaceOrder = async () => {
         setIsPlacing(true);
         try {
-            const orderItems = items.map((item) => ({
-                product_id: item.product.id,
-                variant_id: item.variant?.id || null,
-                product_title: item.product.title,
-                variant_name: item.variant?.variant_name || null,
-                quantity: item.quantity,
-                unit_price: item.variant?.price ?? item.product.base_price,
-            }));
-
-            const res = await fetch('/api/orders', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    guest_info: {
-                        name: address.full_name,
-                        email: '',
-                        phone: address.phone,
-                    },
-                    shipping_address: address,
-                    items: orderItems,
-                    payment_method: 'COD',
-                    shipping_fee: shippingFee,
-                    coupon_code: appliedCoupon?.code || null,
-                    discount_amount: appliedCoupon?.discount_amount || 0,
-                }),
-            });
-
-            const data = await res.json();
-
-            if (res.ok && data.order_id) {
-                setOrderId(data.order_id.substring(0, 8).toUpperCase());
-                setStep('confirmation');
-                clearCart();
+            if (paymentMethod === 'COD') {
+                await placeOrderOnServer('COD');
             } else {
-                alert(data.error || 'Failed to place order. Please try again.');
+                // Razorpay flow
+                if (!razorpayLoaded || !window.Razorpay) {
+                    toast.error('Payment gateway is loading. Please try again in a moment.');
+                    setIsPlacing(false);
+                    return;
+                }
+
+                // 1. Create Razorpay order on our server
+                const createRes = await fetch('/api/razorpay/create-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: total,
+                        receipt: `order_${Date.now()}`,
+                    }),
+                });
+
+                const orderData = await createRes.json();
+
+                if (!createRes.ok) {
+                    toast.error(orderData.error || 'Could not create payment order.');
+                    setIsPlacing(false);
+                    return;
+                }
+
+                // 2. Open Razorpay checkout
+                const options = {
+                    key: orderData.key_id,
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: 'Advay Decor',
+                    description: 'Order Payment',
+                    order_id: orderData.order_id,
+                    handler: async (response: any) => {
+                        // 3. Verify payment on our server
+                        try {
+                            const verifyRes = await fetch('/api/razorpay/verify-payment', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                }),
+                            });
+
+                            const verifyData = await verifyRes.json();
+
+                            if (verifyRes.ok && verifyData.success) {
+                                // 4. Place order on server
+                                await placeOrderOnServer('Razorpay', response.razorpay_payment_id);
+                            } else {
+                                toast.error('Payment verification failed. Please contact support.');
+                            }
+                        } catch {
+                            toast.error('Payment verification failed.');
+                        } finally {
+                            setIsPlacing(false);
+                        }
+                    },
+                    prefill: {
+                        name: address.full_name,
+                        contact: address.phone,
+                    },
+                    theme: {
+                        color: '#00b4d8',
+                    },
+                    modal: {
+                        ondismiss: () => {
+                            setIsPlacing(false);
+                        },
+                    },
+                };
+
+                const rzp = new window.Razorpay(options);
+                rzp.on('payment.failed', (response: any) => {
+                    toast.error(response.error?.description || 'Payment failed. Please try again.');
+                    setIsPlacing(false);
+                });
+                rzp.open();
+                return; // Don't set isPlacing(false) here — Razorpay handles it
             }
         } catch {
-            alert('Something went wrong. Please try again.');
+            toast.error('Something went wrong. Please try again.');
         } finally {
-            setIsPlacing(false);
+            if (paymentMethod === 'COD') setIsPlacing(false);
         }
     };
 
@@ -463,25 +573,37 @@ export default function CheckoutPage() {
                                 </h2>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    <label style={{
-                                        display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
-                                        borderRadius: '0.75rem', border: '2px solid #00b4d8', background: 'rgba(0,180,216,0.03)', cursor: 'pointer',
-                                    }}>
-                                        <input type="radio" name="payment" defaultChecked style={{ accentColor: '#00b4d8' }} />
+                                    <label
+                                        onClick={() => setPaymentMethod('COD')}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
+                                            borderRadius: '0.75rem',
+                                            border: paymentMethod === 'COD' ? '2px solid #00b4d8' : '2px solid #e8e4dc',
+                                            background: paymentMethod === 'COD' ? 'rgba(0,180,216,0.03)' : 'transparent',
+                                            cursor: 'pointer', transition: 'all 0.2s',
+                                        }}
+                                    >
+                                        <input type="radio" name="payment" checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} style={{ accentColor: '#00b4d8' }} />
                                         <div>
                                             <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '0.9rem' }}>Cash on Delivery (COD)</p>
                                             <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>Pay when your order arrives</p>
                                         </div>
                                     </label>
 
-                                    <label style={{
-                                        display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
-                                        borderRadius: '0.75rem', border: '2px solid #e8e4dc', opacity: 0.5, cursor: 'not-allowed',
-                                    }}>
-                                        <input type="radio" name="payment" disabled style={{ accentColor: '#00b4d8' }} />
+                                    <label
+                                        onClick={() => setPaymentMethod('Razorpay')}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
+                                            borderRadius: '0.75rem',
+                                            border: paymentMethod === 'Razorpay' ? '2px solid #00b4d8' : '2px solid #e8e4dc',
+                                            background: paymentMethod === 'Razorpay' ? 'rgba(0,180,216,0.03)' : 'transparent',
+                                            cursor: 'pointer', transition: 'all 0.2s',
+                                        }}
+                                    >
+                                        <input type="radio" name="payment" checked={paymentMethod === 'Razorpay'} onChange={() => setPaymentMethod('Razorpay')} style={{ accentColor: '#00b4d8' }} />
                                         <div>
-                                            <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '0.9rem' }}>Online Payment</p>
-                                            <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>UPI / Card / Netbanking — Coming Soon</p>
+                                            <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '0.9rem' }}>Online Payment (Razorpay)</p>
+                                            <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>UPI / Card / Netbanking / Wallet</p>
                                         </div>
                                     </label>
                                 </div>
