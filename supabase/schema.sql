@@ -304,6 +304,9 @@ CREATE POLICY "Users view own profile" ON profiles FOR SELECT USING (auth.uid() 
 CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Admins view all profiles" ON profiles FOR SELECT USING (public.is_admin());
 
+-- ADMIN_USERS: Admins can read their own row (needed for login check)
+CREATE POLICY "Admins can read own row" ON admin_users FOR SELECT USING (auth.uid() = id);
+
 -- PRODUCTS: Public read, Admin all
 CREATE POLICY "Anyone view active products" ON products FOR SELECT USING (is_active = TRUE);
 CREATE POLICY "Admins manage products" ON products FOR ALL USING (public.is_admin());
