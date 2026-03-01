@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Save, UserPlus, Shield, Truck, Image, Store, Loader2, CreditCard, Smartphone, Building2, Wallet, CalendarClock } from 'lucide-react';
+import {
+    Save, UserPlus, Shield, Truck, Image as ImageIcon, Store, Loader2, CreditCard, Smartphone, Building2, Wallet, CalendarClock, Upload, X, ChevronRight, Globe
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const inputStyle: React.CSSProperties = {
@@ -94,7 +96,6 @@ export default function AdminSettingsPage() {
     const [shippingFee, setShippingFee] = useState('50');
     const [freeShippingThreshold, setFreeShippingThreshold] = useState('999');
     const [codEnabled, setCodEnabled] = useState(true);
-    const [heroBannerUrl, setHeroBannerUrl] = useState('');
 
     // Razorpay payment method toggles
     const [razorpayEnabled, setRazorpayEnabled] = useState(true);
@@ -104,11 +105,17 @@ export default function AdminSettingsPage() {
     const [razorpayWallet, setRazorpayWallet] = useState(true);
     const [razorpayEmi, setRazorpayEmi] = useState(false);
 
+    // Hero Banner State
+    const [heroBannerUrl, setHeroBannerUrl] = useState('');
+    const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+
     // Admin creation state
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [newAdminPassword, setNewAdminPassword] = useState('');
     const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
     const [adminCreated, setAdminCreated] = useState(false);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Fetch current settings from Supabase
     useEffect(() => {
@@ -163,6 +170,46 @@ export default function AdminSettingsPage() {
             toast.error('Failed to save settings');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validation
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            toast.error('Invalid file type. Only JPG, PNG, and WEBP allowed.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('File size must be under 5MB');
+            return;
+        }
+
+        setIsUploadingBanner(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/admin/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                setHeroBannerUrl(data.url);
+                toast.success('Banner uploaded! Save changes to apply.');
+            } else {
+                toast.error(data.error || 'Upload failed');
+            }
+        } catch {
+            toast.error('Failed to upload banner');
+        } finally {
+            setIsUploadingBanner(false);
+            e.target.value = ''; // Reset input
         }
     };
 
@@ -407,19 +454,81 @@ export default function AdminSettingsPage() {
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} style={cardStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '0.5rem', background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Image size={18} style={{ color: '#fff' }} />
+                            <ImageIcon size={18} style={{ color: '#fff' }} />
                         </div>
                         <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23' }}>Hero Banner</h2>
                     </div>
-                    <div>
-                        <label style={labelStyle}>Banner Image URL</label>
-                        <input type="url" value={heroBannerUrl} onChange={(e) => setHeroBannerUrl(e.target.value)} style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '0.8rem' }} placeholder="https://images.unsplash.com/photo-..." />
-                    </div>
-                    {heroBannerUrl && (
-                        <div style={{ marginTop: '1rem', borderRadius: '0.75rem', overflow: 'hidden', height: '120px', background: '#f5f0e8' }}>
-                            <img src={heroBannerUrl} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <div>
+                            <label style={labelStyle}>Banner Image URL</label>
+                            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                <input
+                                    type="url"
+                                    value={heroBannerUrl}
+                                    onChange={(e) => setHeroBannerUrl(e.target.value)}
+                                    style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '0.8rem', flex: 1 }}
+                                    placeholder="https://images.unsplash.com/photo-..."
+                                />
+                                <label style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                    padding: '0 1rem', background: '#f8fafc', border: '1px solid #e2e8f0',
+                                    borderRadius: '0.75rem', cursor: isUploadingBanner ? 'not-allowed' : 'pointer',
+                                    fontSize: '0.8rem', fontWeight: 600, color: '#64748b', transition: 'all 0.2s'
+                                }}>
+                                    <input type="file" accept="image/*" onChange={handleBannerUpload} disabled={isUploadingBanner} style={{ display: 'none' }} />
+                                    {isUploadingBanner ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                                    {isUploadingBanner ? 'Uploading...' : 'Upload'}
+                                </label>
+                            </div>
                         </div>
-                    )}
+
+                        {heroBannerUrl && (
+                            <div style={{ position: 'relative' }}>
+                                <div style={{
+                                    borderRadius: '0.75rem', overflow: 'hidden', height: '200px',
+                                    background: '#f8fafc', border: '1px solid #e2e8f0',
+                                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                                }}>
+                                    <img src={heroBannerUrl} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                </div>
+                                <button
+                                    onClick={() => setHeroBannerUrl('')}
+                                    style={{
+                                        position: 'absolute', top: '0.5rem', right: '0.5rem',
+                                        width: '28px', height: '28px', borderRadius: '50%',
+                                        background: 'rgba(239, 68, 68, 0.9)', color: '#fff',
+                                        border: 'none', display: 'flex', alignItems: 'center',
+                                        justifyContent: 'center', cursor: 'pointer',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                                        transition: 'transform 0.2s'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                >
+                                    <X size={14} />
+                                </button>
+                                <div style={{
+                                    position: 'absolute', bottom: '0.5rem', left: '0.5rem',
+                                    padding: '0.25rem 0.75rem', background: 'rgba(0,0,0,0.6)',
+                                    color: '#fff', borderRadius: '1rem', fontSize: '0.7rem',
+                                    backdropFilter: 'blur(4px)'
+                                }}>
+                                    Desktop Banner Preview (16:9 recommended)
+                                </div>
+                            </div>
+                        )}
+                        {!heroBannerUrl && !isUploadingBanner && (
+                            <div style={{
+                                height: '120px', borderRadius: '0.75rem', border: '2px dashed #e2e8f0',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                                justifyContent: 'center', color: '#94a3b8', gap: '0.5rem'
+                            }}>
+                                <ImageIcon size={32} style={{ opacity: 0.3 }} />
+                                <span style={{ fontSize: '0.8rem' }}>No banner image selected</span>
+                            </div>
+                        )}
+                    </div>
                 </motion.div>
 
                 {/* Add Admin User */}
