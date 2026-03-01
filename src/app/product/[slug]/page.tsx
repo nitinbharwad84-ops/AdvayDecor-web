@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Heart, ChevronRight, Shield, Truck, RotateCcw, Star, MessageSquare } from 'lucide-react';
+import {
+    Star, ShoppingBag, Truck, RotateCcw, ShieldCheck as Shield, Heart,
+    ChevronRight, ChevronLeft, Plus, Minus, MessageSquare, X
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import ImageGallery from '@/components/shop/ImageGallery';
 import VariantSelector from '@/components/shop/VariantSelector';
@@ -203,12 +206,20 @@ export default function ProductDetailPage() {
             if (data.error) throw new Error(data.error);
 
             toast.success('Review submitted successfully!');
-            // Prepend new review
-            setReviews(prev => [data, ...prev]);
-            // Update stats approximately or ideally re-fetch
-            const newTotal = totalReviews + 1;
-            setTotalReviews(newTotal);
-            setAvgRating(((avgRating * totalReviews) + newRating) / newTotal);
+            // Prepend new review, but check if it already exists (upsert case)
+            setReviews(prev => {
+                const exists = prev.find(r => r.id === data.id);
+                if (exists) {
+                    return prev.map(r => r.id === data.id ? data : r);
+                }
+                return [data, ...prev];
+            });
+            // Approximate stat update (only increment total if it was a new review)
+            if (!reviews.find(r => r.id === data.id)) {
+                const newTotal = totalReviews + 1;
+                setTotalReviews(newTotal);
+                setAvgRating(((avgRating * totalReviews) + newRating) / newTotal);
+            }
 
             // Reset
             setIsReviewOpen(false);
@@ -219,6 +230,18 @@ export default function ProductDetailPage() {
             toast.error(err.message || 'Failed to submit review');
         } finally {
             setIsSubmittingReview(false);
+        }
+    };
+
+    const reviewsRef = useRef<HTMLDivElement>(null);
+
+    const scrollReviews = (direction: 'left' | 'right') => {
+        if (reviewsRef.current) {
+            const scrollAmount = 400;
+            reviewsRef.current.scrollBy({
+                left: direction === 'left' ? -scrollAmount : scrollAmount,
+                behavior: 'smooth'
+            });
         }
     };
 
@@ -533,8 +556,8 @@ export default function ProductDetailPage() {
                         )}
                     </AnimatePresence>
 
-                    {/* Review List */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {/* Review List - Horizontal Slider */}
+                    <div style={{ position: 'relative' }}>
                         {reviews.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '4rem 2rem', background: '#fff', borderRadius: '1rem', border: '1px dashed #cbd5e1' }}>
                                 <MessageSquare size={48} style={{ color: '#cbd5e1', margin: '0 auto 1rem' }} />
@@ -542,29 +565,104 @@ export default function ProductDetailPage() {
                                 <p style={{ color: '#94a3b8' }}>Be the first to review this product!</p>
                             </div>
                         ) : (
-                            reviews.map((review) => (
-                                <div key={review.id} style={{ padding: '1.5rem', background: '#fff', borderRadius: '1rem', border: '1px solid #f0ece4' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                        <div>
-                                            <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '1rem' }}>{review.reviewer_name}</p>
-                                            <div style={{ display: 'flex', gap: '0.125rem', marginTop: '0.25rem' }}>
-                                                {[1, 2, 3, 4, 5].map(star => (
-                                                    <Star key={star} size={14} fill={star <= review.rating ? '#fbbf24' : '#e2e8f0'} color={star <= review.rating ? '#fbbf24' : '#e2e8f0'} />
-                                                ))}
+                            <>
+                                <div
+                                    ref={reviewsRef}
+                                    style={{
+                                        display: 'flex',
+                                        gap: '1.5rem',
+                                        overflowX: 'auto',
+                                        scrollSnapType: 'x mandatory',
+                                        padding: '0.5rem 0.25rem',
+                                        scrollbarWidth: 'none',
+                                        msOverflowStyle: 'none',
+                                        WebkitOverflowScrolling: 'touch'
+                                    }}
+                                    className="no-scrollbar"
+                                >
+                                    {reviews.map((review) => (
+                                        <div
+                                            key={review.id}
+                                            style={{
+                                                flex: '0 0 300px',
+                                                padding: '1.5rem',
+                                                background: '#fff',
+                                                borderRadius: '1rem',
+                                                border: '1px solid #f0ece4',
+                                                scrollSnapAlign: 'start',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                height: 'auto',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{review.reviewer_name}</p>
+                                                    <div style={{ display: 'flex', gap: '0.125rem', marginTop: '0.25rem' }}>
+                                                        {[1, 2, 3, 4, 5].map(star => (
+                                                            <Star key={star} size={12} fill={star <= review.rating ? '#fbbf24' : '#e2e8f0'} color={star <= review.rating ? '#fbbf24' : '#e2e8f0'} />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>
+                                                    {new Date(review.created_at).toLocaleDateString()}
+                                                </span>
                                             </div>
+                                            {review.review_text && (
+                                                <p style={{
+                                                    color: '#475569',
+                                                    lineHeight: 1.5,
+                                                    fontSize: '0.9rem',
+                                                    display: '-webkit-box',
+                                                    WebkitLineClamp: 4,
+                                                    WebkitBoxOrient: 'vertical',
+                                                    overflow: 'hidden'
+                                                }}>
+                                                    {review.review_text}
+                                                </p>
+                                            )}
                                         </div>
-                                        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                                            {new Date(review.created_at).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                    {review.review_text && (
-                                        <p style={{ color: '#475569', lineHeight: 1.6 }}>{review.review_text}</p>
-                                    )}
+                                    ))}
                                 </div>
-                            ))
+
+                                {/* Navigation Arrows */}
+                                {reviews.length > 1 && (
+                                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'center' }}>
+                                        <button
+                                            onClick={() => scrollReviews('left')}
+                                            style={{
+                                                width: '40px', height: '40px', borderRadius: '50%', background: '#fff', border: '1px solid #e8e4dc',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)', color: '#0a0a23'
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e8e4dc'; }}
+                                        >
+                                            <ChevronLeft size={20} />
+                                        </button>
+                                        <button
+                                            onClick={() => scrollReviews('right')}
+                                            style={{
+                                                width: '40px', height: '40px', borderRadius: '50%', background: '#fff', border: '1px solid #e8e4dc',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)', color: '#0a0a23'
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e8e4dc'; }}
+                                        >
+                                            <ChevronRight size={20} />
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
+                <style>{`
+                        .no-scrollbar::-webkit-scrollbar { display: none; }
+                        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                    `}</style>
             </section>
 
             {/* Related Products */}
