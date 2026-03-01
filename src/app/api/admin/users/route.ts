@@ -1,8 +1,29 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
+
+async function checkAdminAuth() {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return { error: 'Unauthorized', status: 401 };
+
+    const { data: adminUser } = await supabase
+        .from('admin_users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (!adminUser) return { error: 'Forbidden', status: 403 };
+
+    return { user };
+}
 
 export async function GET() {
     try {
+        const auth = await checkAdminAuth();
+        if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
         const admin = createAdminClient();
 
         // Fetch users from the profiles table
@@ -22,6 +43,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
+        const auth = await checkAdminAuth();
+        if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
         const { email, password, full_name, phone } = await request.json();
 
         if (!email || !password || !full_name) {
@@ -63,6 +87,9 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const auth = await checkAdminAuth();
+        if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
         const url = new URL(request.url);
         const id = url.searchParams.get('id');
 
@@ -86,6 +113,9 @@ export async function DELETE(request: Request) {
 
 export async function PUT(request: Request) {
     try {
+        const auth = await checkAdminAuth();
+        if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
         const { id, full_name, phone } = await request.json();
 
         if (!id) {
