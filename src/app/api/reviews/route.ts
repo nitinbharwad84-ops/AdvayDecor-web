@@ -53,14 +53,30 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get user's name for display
+        // Get user's name for display (check profiles, then admin_users, then metadata)
+        let reviewerName = 'Anonymous User';
+
         const { data: profile } = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
 
-        const reviewerName = profile?.full_name || 'Anonymous User';
+        if (profile?.full_name) {
+            reviewerName = profile.full_name;
+        } else {
+            const { data: adminProfile } = await supabase
+                .from('admin_users')
+                .select('full_name')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (adminProfile?.full_name) {
+                reviewerName = adminProfile.full_name;
+            } else if (user.user_metadata?.full_name) {
+                reviewerName = user.user_metadata.full_name;
+            }
+        }
 
         const { data, error } = await supabase
             .from('product_reviews')
