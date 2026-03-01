@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Star } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { Product } from '@/types';
 
@@ -93,10 +94,21 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                             style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0a0a23', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {product.title}
                         </h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
                             <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0a0a23' }}>
                                 {formatCurrency(product.base_price)}
                             </span>
+                            {product.avg_rating ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <Star size={12} fill="#fbbf24" color="#fbbf24" />
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
+                                        {product.avg_rating.toFixed(1)}
+                                    </span>
+                                    <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                                        ({product.review_count})
+                                    </span>
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 </div>

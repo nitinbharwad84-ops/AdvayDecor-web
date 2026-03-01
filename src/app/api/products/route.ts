@@ -11,7 +11,8 @@ export async function GET() {
             .select(`
                 *,
                 product_variants (*),
-                product_images (*)
+                product_images (*),
+                product_reviews (rating, is_approved)
             `)
             .eq('is_active', true)
             .order('created_at', { ascending: false });
@@ -20,11 +21,19 @@ export async function GET() {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        const shaped = (products || []).map((p: Record<string, unknown>) => ({
-            ...p,
-            variants: p.product_variants || [],
-            images: p.product_images || [],
-        }));
+        const shaped = (products || []).map((p: any) => {
+            const approvedReviews = (p.product_reviews || []).filter((r: any) => r.is_approved);
+            const totalRating = approvedReviews.reduce((acc: number, r: any) => acc + r.rating, 0);
+            const avgRating = approvedReviews.length > 0 ? totalRating / approvedReviews.length : 0;
+
+            return {
+                ...p,
+                variants: p.product_variants || [],
+                images: p.product_images || [],
+                avg_rating: avgRating,
+                review_count: approvedReviews.length
+            };
+        });
 
         return NextResponse.json(shaped);
     } catch (err) {

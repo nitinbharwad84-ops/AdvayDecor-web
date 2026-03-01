@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { SlidersHorizontal, Grid3X3, LayoutGrid } from 'lucide-react';
+import { SlidersHorizontal, Grid3X3, LayoutGrid, ChevronDown } from 'lucide-react';
 import ProductCard from '@/components/shop/ProductCard';
 import type { Product } from '@/types';
 
@@ -11,6 +11,7 @@ export default function ShopPage() {
     const [gridCols, setGridCols] = useState<2 | 3>(3);
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [sortBy, setSortBy] = useState('newest');
 
     // Dynamically derive categories from products
     const categories = useMemo(() => {
@@ -30,11 +31,23 @@ export default function ShopPage() {
             .catch(() => setLoading(false));
     }, []);
 
-    const filteredProducts = useMemo(() => {
-        return allProducts.filter(
+    const sortedProducts = useMemo(() => {
+        let items = allProducts.filter(
             (p) => p.is_active && (selectedCategory === 'All' || p.category === selectedCategory)
         );
-    }, [selectedCategory, allProducts]);
+
+        if (sortBy === 'price-low') {
+            items.sort((a, b) => a.base_price - b.base_price);
+        } else if (sortBy === 'price-high') {
+            items.sort((a, b) => b.base_price - a.base_price);
+        } else if (sortBy === 'newest') {
+            items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        } else if (sortBy === 'rating') {
+            items.sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0));
+        }
+
+        return items;
+    }, [selectedCategory, sortBy, allProducts]);
 
     return (
         <div style={{ paddingTop: 'var(--nav-height, 80px)' }}>
@@ -127,9 +140,38 @@ export default function ShopPage() {
                             </div>
                         </div>
 
-                        <div className="hidden md:flex" style={{ alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#9e9eb8', marginRight: '0.5rem' }}>
-                                {filteredProducts.length} products
+                        <div className="hidden md:flex" style={{ alignItems: 'center', gap: '1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#64648b', fontWeight: 500 }}>Sort By:</span>
+                                <div style={{ position: 'relative' }}>
+                                    <select
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value)}
+                                        style={{
+                                            appearance: 'none',
+                                            background: '#fff',
+                                            border: '1px solid #e2e8f0',
+                                            padding: '0.5rem 2.5rem 0.5rem 1rem',
+                                            borderRadius: '0.75rem',
+                                            fontSize: '0.85rem',
+                                            color: '#0a0a23',
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            outline: 'none',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                                        }}
+                                    >
+                                        <option value="newest">Newest Arrivals</option>
+                                        <option value="price-low">Price: Low to High</option>
+                                        <option value="price-high">Price: High to Low</option>
+                                        <option value="rating">Best Rating</option>
+                                    </select>
+                                    <ChevronDown size={14} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8' }} />
+                                </div>
+                            </div>
+
+                            <span style={{ fontSize: '0.8rem', color: '#9e9eb8' }}>
+                                {sortedProducts.length} products
                             </span>
                             <button
                                 onClick={() => setGridCols(2)}
@@ -179,13 +221,13 @@ export default function ShopPage() {
                                 }`}
                             style={{ gap: '1.5rem' }}
                         >
-                            {filteredProducts.map((product, index) => (
+                            {sortedProducts.map((product, index) => (
                                 <ProductCard key={product.id} product={product} index={index} />
                             ))}
                         </div>
                     )}
 
-                    {!loading && filteredProducts.length === 0 && (
+                    {!loading && sortedProducts.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '5rem 0' }}>
                             <p style={{ color: '#9e9eb8', fontSize: '1.1rem' }}>No products found in this category.</p>
                         </div>

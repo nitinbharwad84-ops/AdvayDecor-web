@@ -21,6 +21,8 @@ export interface Product {
   // Joined data
   images?: ProductImage[];
   variants?: ProductVariant[];
+  avg_rating?: number;
+  review_count?: number;
 }
 
 export interface ProductVariant {
