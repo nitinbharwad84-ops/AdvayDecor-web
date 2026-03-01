@@ -45,6 +45,18 @@ export default function ProductDetailPage() {
     const [newReviewText, setNewReviewText] = useState('');
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
+    const reviewsRef = useRef<HTMLDivElement>(null);
+
+    const scrollReviews = (direction: 'left' | 'right') => {
+        if (reviewsRef.current) {
+            const scrollAmount = 400;
+            reviewsRef.current.scrollBy({
+                left: direction === 'left' ? -scrollAmount : scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    };
+
     const addItem = useCartStore((s) => s.addItem);
     const { isAuthenticated } = useUserAuthStore();
 
@@ -230,18 +242,6 @@ export default function ProductDetailPage() {
             toast.error(err.message || 'Failed to submit review');
         } finally {
             setIsSubmittingReview(false);
-        }
-    };
-
-    const reviewsRef = useRef<HTMLDivElement>(null);
-
-    const scrollReviews = (direction: 'left' | 'right') => {
-        if (reviewsRef.current) {
-            const scrollAmount = 400;
-            reviewsRef.current.scrollBy({
-                left: direction === 'left' ? -scrollAmount : scrollAmount,
-                behavior: 'smooth'
-            });
         }
     };
 
