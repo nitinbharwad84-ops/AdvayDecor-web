@@ -103,7 +103,11 @@ export default function CheckoutPage() {
                         city: data[0].city,
                         state: data[0].state,
                         pincode: data[0].postal_code,
+                        email: user?.email || '',
                     });
+                } else {
+                    // Pre-fill email for authenticated users with no saved addresses
+                    setAddress(prev => ({ ...prev, email: user?.email || '' }));
                 }
             } catch (err) {
                 console.error("Error fetching addresses:", err);
@@ -421,6 +425,20 @@ export default function CheckoutPage() {
                                     Shipping Address
                                 </h2>
 
+                                {/* Guest Checkout Banner */}
+                                {!isAuthenticated && (
+                                    <div style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '0.875rem 1rem', borderRadius: '0.75rem',
+                                        background: 'rgba(0,180,216,0.04)', border: '1px solid rgba(0,180,216,0.15)',
+                                        marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem',
+                                    }}>
+                                        <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0 }}>
+                                            Checking out as a <strong style={{ color: '#0a0a23' }}>guest</strong>. <Link href="/login" style={{ color: '#00b4d8', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link> to save your address for next time.
+                                        </p>
+                                    </div>
+                                )}
+
                                 {isAuthenticated && savedAddresses.length > 0 && (
                                     <div style={{ marginBottom: '2rem' }}>
                                         <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.75rem' }}>Saved Addresses</h3>
@@ -474,7 +492,7 @@ export default function CheckoutPage() {
                                     </div>
                                 )}
 
-                                {selectedAddressId === 'new' && (
+                                {(selectedAddressId === 'new' || !isAuthenticated) && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: '1rem' }}>
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Full Name *</label>
