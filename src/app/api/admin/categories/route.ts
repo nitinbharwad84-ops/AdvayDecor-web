@@ -44,14 +44,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Check user role
-        const { data: profile } = await supabase
-            .from('profiles')
+        // Check if user exists in admin_users table
+        const { data: adminUser } = await supabase
+            .from('admin_users')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
+        if (!adminUser || (adminUser.role !== 'admin' && adminUser.role !== 'super_admin')) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
