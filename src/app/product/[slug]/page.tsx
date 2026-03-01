@@ -224,6 +224,48 @@ export default function ProductDetailPage() {
 
     return (
         <div style={{ paddingTop: 'var(--nav-height, 80px)' }}>
+            {/* JSON-LD Structured Data for SEO */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        '@context': 'https://schema.org',
+                        '@type': 'Product',
+                        name: product.title,
+                        description: product.description || '',
+                        image: currentImages.map((img) => img.image_url),
+                        brand: {
+                            '@type': 'Brand',
+                            name: 'AdvayDecor',
+                        },
+                        offers: {
+                            '@type': 'Offer',
+                            url: `${typeof window !== 'undefined' ? window.location.href : ''}`,
+                            priceCurrency: 'INR',
+                            price: displayPrice,
+                            availability: stockQuantity > 0
+                                ? 'https://schema.org/InStock'
+                                : 'https://schema.org/OutOfStock',
+                            seller: {
+                                '@type': 'Organization',
+                                name: 'AdvayDecor',
+                            },
+                        },
+                        ...(totalReviews > 0
+                            ? {
+                                aggregateRating: {
+                                    '@type': 'AggregateRating',
+                                    ratingValue: avgRating.toFixed(1),
+                                    reviewCount: totalReviews,
+                                    bestRating: 5,
+                                    worstRating: 1,
+                                },
+                            }
+                            : {}),
+                    }),
+                }}
+            />
+
             {/* Breadcrumb */}
             <div style={{ background: '#f5f0e8', borderBottom: '1px solid #f0ece4' }}>
                 <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0.75rem 1.5rem' }}>

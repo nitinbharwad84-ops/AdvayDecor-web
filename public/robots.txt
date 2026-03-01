@@ -1,0 +1,10 @@
+# AdvayDecor — robots.txt
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin-login
+Disallow: /api/
+Disallow: /profile
+
+# Sitemap
+Sitemap: https://www.advaydecor.com/sitemap.xml

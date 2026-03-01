@@ -6,13 +6,19 @@ import { SlidersHorizontal, Grid3X3, LayoutGrid } from 'lucide-react';
 import ProductCard from '@/components/shop/ProductCard';
 import type { Product } from '@/types';
 
-const categories = ['All', 'Cushion'];
-
 export default function ShopPage() {
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [gridCols, setGridCols] = useState<2 | 3>(3);
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Dynamically derive categories from products
+    const categories = useMemo(() => {
+        const uniqueCategories = Array.from(
+            new Set(allProducts.map((p) => p.category).filter(Boolean))
+        );
+        return ['All', ...uniqueCategories];
+    }, [allProducts]);
 
     useEffect(() => {
         fetch('/api/products')
