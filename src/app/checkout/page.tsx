@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ChevronRight, MapPin, CreditCard, CheckCircle, ShoppingBag, ArrowLeft, Tag, X, Plus, Loader2 } from 'lucide-react';
+import { ChevronRight, MapPin, CreditCard, CheckCircle, ShoppingBag, ArrowLeft, Tag, X, Plus, Loader2, LogIn } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 import type { ShippingAddress } from '@/types';
@@ -347,6 +347,52 @@ export default function CheckoutPage() {
         );
     }
 
+    // Login required to checkout
+    if (!isAuthenticated) {
+        return (
+            <div style={{ paddingTop: 'var(--nav-height, 80px)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fdfbf7' }}>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{ textAlign: 'center', padding: '3rem 2rem', maxWidth: '440px', background: '#fff', borderRadius: '1.5rem', border: '1px solid #f0ece4', boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}
+                >
+                    <div style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: 'rgba(0,180,216,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                        <LogIn size={32} style={{ color: '#00b4d8' }} />
+                    </div>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '0.75rem' }}>Sign in to checkout</h2>
+                    <p style={{ color: '#64648b', marginBottom: '2rem', lineHeight: 1.6, fontSize: '0.9rem' }}>
+                        Please sign in or create an account to place your order. Your cart items will be saved.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
+                        <Link
+                            href="/login"
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                padding: '0.875rem 2.5rem', background: 'linear-gradient(135deg, #00b4d8, #0096b7)', color: '#fff',
+                                borderRadius: '0.75rem', fontWeight: 600, textDecoration: 'none', fontSize: '0.95rem',
+                                boxShadow: '0 4px 16px rgba(0,180,216,0.25)', transition: 'all 0.2s',
+                            }}
+                        >
+                            <LogIn size={18} />
+                            Sign In / Create Account
+                        </Link>
+                        <Link
+                            href="/cart"
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                                padding: '0.75rem 1.5rem', border: '1px solid #e8e4dc',
+                                borderRadius: '0.75rem', color: '#64648b', textDecoration: 'none', fontSize: '0.85rem',
+                            }}
+                        >
+                            <ArrowLeft size={16} />
+                            Back to Cart
+                        </Link>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
+
     const inputStyle: React.CSSProperties = {
         width: '100%',
         padding: '0.75rem 1rem',
@@ -425,19 +471,7 @@ export default function CheckoutPage() {
                                     Shipping Address
                                 </h2>
 
-                                {/* Guest Checkout Banner */}
-                                {!isAuthenticated && (
-                                    <div style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        padding: '0.875rem 1rem', borderRadius: '0.75rem',
-                                        background: 'rgba(0,180,216,0.04)', border: '1px solid rgba(0,180,216,0.15)',
-                                        marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem',
-                                    }}>
-                                        <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0 }}>
-                                            Checking out as a <strong style={{ color: '#0a0a23' }}>guest</strong>. <Link href="/login" style={{ color: '#00b4d8', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link> to save your address for next time.
-                                        </p>
-                                    </div>
-                                )}
+
 
                                 {isAuthenticated && savedAddresses.length > 0 && (
                                     <div style={{ marginBottom: '2rem' }}>
@@ -492,7 +526,7 @@ export default function CheckoutPage() {
                                     </div>
                                 )}
 
-                                {(selectedAddressId === 'new' || !isAuthenticated) && (
+                                {selectedAddressId === 'new' && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: '1rem' }}>
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#0a0a23', marginBottom: '0.375rem' }}>Full Name *</label>
