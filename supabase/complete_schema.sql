@@ -23,7 +23,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 -- Add unique constraint on phone (allows NULL but prevents duplicates)
-ALTER TABLE public.profiles ADD CONSTRAINT unique_phone UNIQUE (phone);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_phone') THEN
+    ALTER TABLE public.profiles ADD CONSTRAINT unique_phone UNIQUE (phone);
+  END IF;
+END $$;
 
 -- 2. ADMIN_USERS (Admin accounts — completely separate from customers)
 CREATE TABLE IF NOT EXISTS public.admin_users (
@@ -349,44 +353,75 @@ ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.faq_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 
--- 5b. POLICIES
+-- 5b. POLICIES (Idempotent approach: DROP IF EXISTS, then CREATE)
 
 -- ── PROFILES ──
+DROP POLICY IF EXISTS "Users view own profile" ON profiles;
 CREATE POLICY "Users view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users update own profile" ON profiles;
 CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Admins view all profiles" ON profiles;
 CREATE POLICY "Admins view all profiles" ON profiles FOR SELECT USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins manage all profiles" ON profiles;
 CREATE POLICY "Admins manage all profiles" ON profiles FOR ALL USING (public.is_admin());
 
 -- ── ADMIN_USERS ──
+DROP POLICY IF EXISTS "Admins can read own row" ON admin_users;
 CREATE POLICY "Admins can read own row" ON admin_users FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Super admins can manage admin_users" ON admin_users;
 CREATE POLICY "Super admins can manage admin_users" ON admin_users FOR ALL USING (public.is_admin());
 
 -- ── CATEGORIES ──
+DROP POLICY IF EXISTS "Anyone view active categories" ON categories;
 CREATE POLICY "Anyone view active categories" ON categories FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins manage categories" ON categories;
 CREATE POLICY "Admins manage categories" ON categories FOR ALL USING (public.is_admin());
 
 -- ── PRODUCTS ──
+DROP POLICY IF EXISTS "Anyone view active products" ON products;
 CREATE POLICY "Anyone view active products" ON products FOR SELECT USING (is_active = TRUE);
+
+DROP POLICY IF EXISTS "Admins manage products" ON products;
 CREATE POLICY "Admins manage products" ON products FOR ALL USING (public.is_admin());
 
 -- ── PRODUCT VARIANTS ──
+DROP POLICY IF EXISTS "Anyone view product variants" ON product_variants;
 CREATE POLICY "Anyone view product variants" ON product_variants FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins manage product variants" ON product_variants;
 CREATE POLICY "Admins manage product variants" ON product_variants FOR ALL USING (public.is_admin());
 
 -- ── PRODUCT IMAGES ──
+DROP POLICY IF EXISTS "Anyone view product images" ON product_images;
 CREATE POLICY "Anyone view product images" ON product_images FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins manage product images" ON product_images;
 CREATE POLICY "Admins manage product images" ON product_images FOR ALL USING (public.is_admin());
 
 -- ── SITE CONFIG ──
+DROP POLICY IF EXISTS "Anyone read site config" ON site_config;
 CREATE POLICY "Anyone read site config" ON site_config FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins manage site config" ON site_config;
 CREATE POLICY "Admins manage site config" ON site_config FOR ALL USING (public.is_admin());
 
 -- ── ORDERS ──
+DROP POLICY IF EXISTS "Users view own orders" ON orders;
 CREATE POLICY "Users view own orders" ON orders FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users create orders" ON orders;
 CREATE POLICY "Users create orders" ON orders FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins manage orders" ON orders;
 CREATE POLICY "Admins manage orders" ON orders FOR ALL USING (public.is_admin());
 
 -- ── ORDER ITEMS ──
+DROP POLICY IF EXISTS "Users view own order items" ON order_items;
 CREATE POLICY "Users view own order items" ON order_items
   FOR SELECT USING (
     EXISTS (
@@ -395,6 +430,8 @@ CREATE POLICY "Users view own order items" ON order_items
         AND orders.user_id = auth.uid()
     )
   );
+
+DROP POLICY IF EXISTS "Users insert own order items" ON order_items;
 CREATE POLICY "Users insert own order items" ON order_items
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -403,38 +440,69 @@ CREATE POLICY "Users insert own order items" ON order_items
         AND orders.user_id = auth.uid()
     )
   );
+
+DROP POLICY IF EXISTS "Admins manage order items" ON order_items;
 CREATE POLICY "Admins manage order items" ON order_items FOR ALL USING (public.is_admin());
 
 -- ── OTPs (managed via service role key on server) ──
+DROP POLICY IF EXISTS "Admins manage email otps" ON email_verification_otps;
 CREATE POLICY "Admins manage email otps" ON email_verification_otps FOR ALL USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins manage phone otps" ON phone_verification_otps;
 CREATE POLICY "Admins manage phone otps" ON phone_verification_otps FOR ALL USING (public.is_admin());
 
 -- ── USER ADDRESSES ──
+DROP POLICY IF EXISTS "Users manage own addresses" ON user_addresses;
 CREATE POLICY "Users manage own addresses" ON user_addresses FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins read all addresses" ON user_addresses;
 CREATE POLICY "Admins read all addresses" ON user_addresses FOR SELECT USING (public.is_admin());
 
 -- ── PRODUCT REVIEWS ──
+DROP POLICY IF EXISTS "Anyone view approved reviews" ON product_reviews;
 CREATE POLICY "Anyone view approved reviews" ON product_reviews FOR SELECT USING (is_approved = true);
+
+DROP POLICY IF EXISTS "Users insert own reviews" ON product_reviews;
 CREATE POLICY "Users insert own reviews" ON product_reviews FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users update own reviews" ON product_reviews;
 CREATE POLICY "Users update own reviews" ON product_reviews FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins manage all reviews" ON product_reviews;
 CREATE POLICY "Admins manage all reviews" ON product_reviews FOR ALL USING (public.is_admin());
 
 -- ── WISHLISTS ──
+DROP POLICY IF EXISTS "Users manage own wishlist" ON wishlists;
 CREATE POLICY "Users manage own wishlist" ON wishlists FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins view all wishlists" ON wishlists;
 CREATE POLICY "Admins view all wishlists" ON wishlists FOR SELECT USING (public.is_admin());
 
 -- ── CONTACT MESSAGES ──
+DROP POLICY IF EXISTS "Anyone can send contact message" ON contact_messages;
 CREATE POLICY "Anyone can send contact message" ON contact_messages FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Users view own messages" ON contact_messages;
 CREATE POLICY "Users view own messages" ON contact_messages FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins manage all messages" ON contact_messages;
 CREATE POLICY "Admins manage all messages" ON contact_messages FOR ALL USING (public.is_admin());
 
 -- ── FAQ QUESTIONS ──
+DROP POLICY IF EXISTS "Anyone can submit faq question" ON faq_questions;
 CREATE POLICY "Anyone can submit faq question" ON faq_questions FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Users view own questions" ON faq_questions;
 CREATE POLICY "Users view own questions" ON faq_questions FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins manage all faq questions" ON faq_questions;
 CREATE POLICY "Admins manage all faq questions" ON faq_questions FOR ALL USING (public.is_admin());
 
 -- ── COUPONS ──
+DROP POLICY IF EXISTS "Anyone view active coupons" ON coupons;
 CREATE POLICY "Anyone view active coupons" ON coupons FOR SELECT USING (is_active = true);
+
+DROP POLICY IF EXISTS "Admins manage coupons" ON coupons;
 CREATE POLICY "Admins manage coupons" ON coupons FOR ALL USING (public.is_admin());
 
 
@@ -453,7 +521,13 @@ INSERT INTO public.site_config (key, value, description) VALUES
   ('global_shipping_fee', '50', 'Global shipping fee in INR. Set to 0 for free shipping promotion.'),
   ('hero_banner_url', 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1920&q=80', 'URL for the homepage hero banner image.'),
   ('cod_enabled', 'true', 'Enable or disable Cash on Delivery payment option.'),
-  ('free_shipping_threshold', '999', 'Order amount above which shipping is free.')
+  ('free_shipping_threshold', '999', 'Order amount above which shipping is free.'),
+  ('razorpay_enabled', 'true', 'Master toggle for Razorpay online payments.'),
+  ('razorpay_upi', 'true', 'Enable UPI payment method (Google Pay, PhonePe, Paytm, BHIM).'),
+  ('razorpay_card', 'true', 'Enable Credit/Debit Card payment method.'),
+  ('razorpay_netbanking', 'true', 'Enable Netbanking payment method.'),
+  ('razorpay_wallet', 'true', 'Enable Wallet payment method (Paytm, Mobikwik, FreeCharge).'),
+  ('razorpay_emi', 'false', 'Enable EMI payment method (card-based installments).')
 ON CONFLICT (key) DO NOTHING;
 
 -- Sample products
@@ -488,10 +562,12 @@ VALUES ('product-images', 'product-images', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Allow public read access to product images
+DROP POLICY IF EXISTS "Public read product images" ON storage.objects;
 CREATE POLICY "Public read product images" ON storage.objects
   FOR SELECT USING (bucket_id = 'product-images');
 
 -- Allow admins to upload product images
+DROP POLICY IF EXISTS "Admins upload product images" ON storage.objects;
 CREATE POLICY "Admins upload product images" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'product-images'
@@ -499,6 +575,7 @@ CREATE POLICY "Admins upload product images" ON storage.objects
   );
 
 -- Allow admins to update product images
+DROP POLICY IF EXISTS "Admins update product images" ON storage.objects;
 CREATE POLICY "Admins update product images" ON storage.objects
   FOR UPDATE USING (
     bucket_id = 'product-images'
@@ -506,6 +583,7 @@ CREATE POLICY "Admins update product images" ON storage.objects
   );
 
 -- Allow admins to delete product images
+DROP POLICY IF EXISTS "Admins delete product images" ON storage.objects;
 CREATE POLICY "Admins delete product images" ON storage.objects
   FOR DELETE USING (
     bucket_id = 'product-images'

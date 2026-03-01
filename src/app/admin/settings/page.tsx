@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, UserPlus, Shield, Truck, Image, Store, Loader2 } from 'lucide-react';
+import { Save, UserPlus, Shield, Truck, Image, Store, Loader2, CreditCard, Smartphone, Building2, Wallet, CalendarClock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const inputStyle: React.CSSProperties = {
@@ -20,6 +20,72 @@ const cardStyle: React.CSSProperties = {
     padding: '1.5rem', borderRadius: '1rem', background: '#ffffff', border: '1px solid #f0ece4',
 };
 
+// Reusable toggle switch
+function ToggleSwitch({ enabled, onToggle, disabled }: { enabled: boolean; onToggle: () => void; disabled?: boolean }) {
+    return (
+        <div
+            style={{
+                width: '44px', height: '24px', borderRadius: '12px',
+                background: disabled ? '#e0e0e0' : (enabled ? '#00b4d8' : '#e8e4dc'),
+                transition: 'background 0.2s ease', position: 'relative',
+                cursor: disabled ? 'not-allowed' : 'pointer', flexShrink: 0,
+                opacity: disabled ? 0.5 : 1,
+            }}
+            onClick={() => !disabled && onToggle()}
+        >
+            <div style={{
+                position: 'absolute', top: '2px', left: enabled ? '22px' : '2px',
+                width: '20px', height: '20px', borderRadius: '50%',
+                background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'left 0.2s ease',
+            }} />
+        </div>
+    );
+}
+
+// Reusable payment toggle row
+function PaymentToggleRow({
+    icon: Icon,
+    iconGradient,
+    label,
+    description,
+    enabled,
+    onToggle,
+    disabled,
+}: {
+    icon: any;
+    iconGradient: string;
+    label: string;
+    description: string;
+    enabled: boolean;
+    onToggle: () => void;
+    disabled?: boolean;
+}) {
+    return (
+        <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '0.875rem 1rem', borderRadius: '0.75rem',
+            border: '1px solid #f0ece4', background: disabled ? '#fafaf8' : '#ffffff',
+            opacity: disabled ? 0.6 : 1,
+            transition: 'all 0.2s',
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                    width: '32px', height: '32px', borderRadius: '0.5rem',
+                    background: iconGradient,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                    <Icon size={15} style={{ color: '#fff' }} />
+                </div>
+                <div>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#0a0a23' }}>{label}</span>
+                    <p style={{ fontSize: '0.7rem', color: '#9e9eb8', marginTop: '0.05rem' }}>{description}</p>
+                </div>
+            </div>
+            <ToggleSwitch enabled={enabled} onToggle={onToggle} disabled={disabled} />
+        </div>
+    );
+}
+
 export default function AdminSettingsPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -29,6 +95,14 @@ export default function AdminSettingsPage() {
     const [freeShippingThreshold, setFreeShippingThreshold] = useState('999');
     const [codEnabled, setCodEnabled] = useState(true);
     const [heroBannerUrl, setHeroBannerUrl] = useState('');
+
+    // Razorpay payment method toggles
+    const [razorpayEnabled, setRazorpayEnabled] = useState(true);
+    const [razorpayUpi, setRazorpayUpi] = useState(true);
+    const [razorpayCard, setRazorpayCard] = useState(true);
+    const [razorpayNetbanking, setRazorpayNetbanking] = useState(true);
+    const [razorpayWallet, setRazorpayWallet] = useState(true);
+    const [razorpayEmi, setRazorpayEmi] = useState(false);
 
     // Admin creation state
     const [newAdminEmail, setNewAdminEmail] = useState('');
@@ -46,6 +120,13 @@ export default function AdminSettingsPage() {
                     if (data.free_shipping_threshold) setFreeShippingThreshold(data.free_shipping_threshold);
                     if (data.cod_enabled !== undefined) setCodEnabled(data.cod_enabled === 'true');
                     if (data.hero_banner_url) setHeroBannerUrl(data.hero_banner_url);
+                    // Razorpay settings
+                    if (data.razorpay_enabled !== undefined) setRazorpayEnabled(data.razorpay_enabled === 'true');
+                    if (data.razorpay_upi !== undefined) setRazorpayUpi(data.razorpay_upi === 'true');
+                    if (data.razorpay_card !== undefined) setRazorpayCard(data.razorpay_card === 'true');
+                    if (data.razorpay_netbanking !== undefined) setRazorpayNetbanking(data.razorpay_netbanking === 'true');
+                    if (data.razorpay_wallet !== undefined) setRazorpayWallet(data.razorpay_wallet === 'true');
+                    if (data.razorpay_emi !== undefined) setRazorpayEmi(data.razorpay_emi === 'true');
                 }
                 setLoading(false);
             })
@@ -63,6 +144,12 @@ export default function AdminSettingsPage() {
                     free_shipping_threshold: freeShippingThreshold,
                     cod_enabled: codEnabled ? 'true' : 'false',
                     hero_banner_url: heroBannerUrl,
+                    razorpay_enabled: razorpayEnabled ? 'true' : 'false',
+                    razorpay_upi: razorpayUpi ? 'true' : 'false',
+                    razorpay_card: razorpayCard ? 'true' : 'false',
+                    razorpay_netbanking: razorpayNetbanking ? 'true' : 'false',
+                    razorpay_wallet: razorpayWallet ? 'true' : 'false',
+                    razorpay_emi: razorpayEmi ? 'true' : 'false',
                 }),
             });
 
@@ -124,6 +211,9 @@ export default function AdminSettingsPage() {
             setIsCreatingAdmin(false);
         }
     };
+
+    // Count enabled Razorpay methods
+    const enabledMethodsCount = [razorpayUpi, razorpayCard, razorpayNetbanking, razorpayWallet, razorpayEmi].filter(Boolean).length;
 
     if (loading) {
         return (
@@ -188,28 +278,129 @@ export default function AdminSettingsPage() {
                         <div style={{ width: '36px', height: '36px', borderRadius: '0.5rem', background: 'linear-gradient(135deg, #22c55e, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Store size={18} style={{ color: '#fff' }} />
                         </div>
-                        <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23' }}>Payment</h2>
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23' }}>Payment Methods</h2>
                     </div>
-                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                        <div>
-                            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0a0a23' }}>Cash on Delivery (COD)</span>
-                            <p style={{ fontSize: '0.75rem', color: '#9e9eb8', marginTop: '0.125rem' }}>Allow customers to pay when the order is delivered</p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {/* COD Toggle */}
+                        <PaymentToggleRow
+                            icon={Store}
+                            iconGradient="linear-gradient(135deg, #f59e0b, #f97316)"
+                            label="Cash on Delivery (COD)"
+                            description="Allow customers to pay when the order is delivered"
+                            enabled={codEnabled}
+                            onToggle={() => setCodEnabled(!codEnabled)}
+                        />
+
+                        {/* Razorpay Master Toggle */}
+                        <div style={{
+                            padding: '0.875rem 1rem', borderRadius: '0.75rem',
+                            border: '1px solid #f0ece4', background: razorpayEnabled ? 'rgba(0,180,216,0.02)' : '#ffffff',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div style={{
+                                        width: '32px', height: '32px', borderRadius: '0.5rem',
+                                        background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    }}>
+                                        <CreditCard size={15} style={{ color: '#fff' }} />
+                                    </div>
+                                    <div>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0a0a23' }}>Razorpay (Online Payments)</span>
+                                        <p style={{ fontSize: '0.7rem', color: '#9e9eb8', marginTop: '0.05rem' }}>
+                                            {razorpayEnabled ? `${enabledMethodsCount} method${enabledMethodsCount !== 1 ? 's' : ''} active` : 'Disabled — customers cannot pay online'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <ToggleSwitch enabled={razorpayEnabled} onToggle={() => setRazorpayEnabled(!razorpayEnabled)} />
+                            </div>
+
+                            {/* Sub-methods — only show when Razorpay is enabled */}
+                            {razorpayEnabled && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    style={{
+                                        marginTop: '0.875rem', paddingTop: '0.875rem',
+                                        borderTop: '1px solid #f0ece4',
+                                        display: 'flex', flexDirection: 'column', gap: '0.5rem',
+                                    }}
+                                >
+                                    <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#9e9eb8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+                                        Payment Methods
+                                    </p>
+
+                                    <PaymentToggleRow
+                                        icon={Smartphone}
+                                        iconGradient="linear-gradient(135deg, #6366f1, #8b5cf6)"
+                                        label="UPI"
+                                        description="Google Pay, PhonePe, Paytm, BHIM"
+                                        enabled={razorpayUpi}
+                                        onToggle={() => setRazorpayUpi(!razorpayUpi)}
+                                    />
+
+                                    <PaymentToggleRow
+                                        icon={CreditCard}
+                                        iconGradient="linear-gradient(135deg, #ec4899, #f43f5e)"
+                                        label="Credit / Debit Card"
+                                        description="Visa, Mastercard, RuPay, Amex"
+                                        enabled={razorpayCard}
+                                        onToggle={() => setRazorpayCard(!razorpayCard)}
+                                    />
+
+                                    <PaymentToggleRow
+                                        icon={Building2}
+                                        iconGradient="linear-gradient(135deg, #0ea5e9, #0284c7)"
+                                        label="Netbanking"
+                                        description="All major Indian banks supported"
+                                        enabled={razorpayNetbanking}
+                                        onToggle={() => setRazorpayNetbanking(!razorpayNetbanking)}
+                                    />
+
+                                    <PaymentToggleRow
+                                        icon={Wallet}
+                                        iconGradient="linear-gradient(135deg, #14b8a6, #059669)"
+                                        label="Wallet"
+                                        description="Paytm Wallet, Mobikwik, FreeCharge"
+                                        enabled={razorpayWallet}
+                                        onToggle={() => setRazorpayWallet(!razorpayWallet)}
+                                    />
+
+                                    <PaymentToggleRow
+                                        icon={CalendarClock}
+                                        iconGradient="linear-gradient(135deg, #a855f7, #7c3aed)"
+                                        label="EMI"
+                                        description="Card-based EMI installments"
+                                        enabled={razorpayEmi}
+                                        onToggle={() => setRazorpayEmi(!razorpayEmi)}
+                                    />
+
+                                    {enabledMethodsCount === 0 && (
+                                        <p style={{
+                                            fontSize: '0.75rem', color: '#ef4444', fontWeight: 500,
+                                            padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                                            background: 'rgba(239,68,68,0.06)', marginTop: '0.25rem',
+                                        }}>
+                                            ⚠️ No payment methods enabled. Customers won&apos;t be able to pay online.
+                                        </p>
+                                    )}
+                                </motion.div>
+                            )}
                         </div>
-                        <div
-                            style={{
-                                width: '44px', height: '24px', borderRadius: '12px',
-                                background: codEnabled ? '#00b4d8' : '#e8e4dc',
-                                transition: 'background 0.2s ease', position: 'relative', cursor: 'pointer', flexShrink: 0,
-                            }}
-                            onClick={() => setCodEnabled(!codEnabled)}
-                        >
-                            <div style={{
-                                position: 'absolute', top: '2px', left: codEnabled ? '22px' : '2px',
-                                width: '20px', height: '20px', borderRadius: '50%',
-                                background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'left 0.2s ease',
-                            }} />
-                        </div>
-                    </label>
+
+                        {/* Warning if both COD and Razorpay are disabled */}
+                        {!codEnabled && !razorpayEnabled && (
+                            <p style={{
+                                fontSize: '0.8rem', color: '#ef4444', fontWeight: 500,
+                                padding: '0.75rem 1rem', borderRadius: '0.75rem',
+                                background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)',
+                            }}>
+                                ⚠️ All payment methods are disabled! Customers cannot place orders.
+                            </p>
+                        )}
+                    </div>
                 </motion.div>
 
                 {/* Hero Banner URL */}

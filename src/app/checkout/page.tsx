@@ -65,6 +65,17 @@ export default function CheckoutPage() {
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD');
     const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
+    // Payment method settings from admin
+    const [paymentSettings, setPaymentSettings] = useState({
+        cod_enabled: true,
+        razorpay_enabled: true,
+        razorpay_upi: true,
+        razorpay_card: true,
+        razorpay_netbanking: true,
+        razorpay_wallet: true,
+        razorpay_emi: false,
+    });
+
     // Load Razorpay SDK
     useEffect(() => {
         const script = document.createElement('script');
@@ -79,6 +90,37 @@ export default function CheckoutPage() {
 
     useEffect(() => {
         setMounted(true);
+
+        // Fetch payment settings from site_config
+        const fetchPaymentSettings = async () => {
+            try {
+                const supabase = createClient();
+                const { data } = await supabase.from('site_config').select('key, value');
+                if (data) {
+                    const config: Record<string, string> = {};
+                    data.forEach((row: { key: string; value: string }) => { config[row.key] = row.value; });
+                    const ps = {
+                        cod_enabled: config.cod_enabled !== 'false',
+                        razorpay_enabled: config.razorpay_enabled !== 'false',
+                        razorpay_upi: config.razorpay_upi !== 'false',
+                        razorpay_card: config.razorpay_card !== 'false',
+                        razorpay_netbanking: config.razorpay_netbanking !== 'false',
+                        razorpay_wallet: config.razorpay_wallet !== 'false',
+                        razorpay_emi: config.razorpay_emi === 'true',
+                    };
+                    setPaymentSettings(ps);
+                    // Auto-select the first available payment method
+                    if (!ps.cod_enabled && ps.razorpay_enabled) {
+                        setPaymentMethod('Razorpay');
+                    } else if (ps.cod_enabled) {
+                        setPaymentMethod('COD');
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching payment settings:', err);
+            }
+        };
+        fetchPaymentSettings();
 
         const fetchAddresses = async () => {
             if (!isAuthenticated || !user?.id) return;
@@ -268,7 +310,15 @@ export default function CheckoutPage() {
                 }
 
                 // 2. Open Razorpay checkout
-                const options = {
+                // Build Razorpay method config based on admin settings
+                const methodConfig: Record<string, boolean> = {};
+                if (!paymentSettings.razorpay_upi) methodConfig['upi'] = false;
+                if (!paymentSettings.razorpay_card) methodConfig['card'] = false;
+                if (!paymentSettings.razorpay_netbanking) methodConfig['netbanking'] = false;
+                if (!paymentSettings.razorpay_wallet) methodConfig['wallet'] = false;
+                if (!paymentSettings.razorpay_emi) methodConfig['emi'] = false;
+
+                const options: Record<string, any> = {
                     key: orderData.key_id,
                     amount: orderData.amount,
                     currency: orderData.currency,
@@ -315,6 +365,28 @@ export default function CheckoutPage() {
                         },
                     },
                 };
+
+                // Apply method restrictions if any methods are disabled
+                if (Object.keys(methodConfig).length > 0) {
+                    options.config = {
+                        display: {
+                            blocks: {
+                                banks: {
+                                    name: 'Payment Methods',
+                                    instruments: [
+                                        ...(paymentSettings.razorpay_upi ? [{ method: 'upi' }] : []),
+                                        ...(paymentSettings.razorpay_card ? [{ method: 'card' }] : []),
+                                        ...(paymentSettings.razorpay_netbanking ? [{ method: 'netbanking' }] : []),
+                                        ...(paymentSettings.razorpay_wallet ? [{ method: 'wallet' }] : []),
+                                        ...(paymentSettings.razorpay_emi ? [{ method: 'emi' }] : []),
+                                    ],
+                                },
+                            },
+                            sequence: ['block.banks'],
+                            preferences: { show_default_blocks: false },
+                        },
+                    };
+                }
 
                 const rzp = new window.Razorpay(options);
                 rzp.on('payment.failed', (response: any) => {
@@ -639,39 +711,51 @@ export default function CheckoutPage() {
                                 </h2>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    <label
-                                        onClick={() => setPaymentMethod('COD')}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
-                                            borderRadius: '0.75rem',
-                                            border: paymentMethod === 'COD' ? '2px solid #00b4d8' : '2px solid #e8e4dc',
-                                            background: paymentMethod === 'COD' ? 'rgba(0,180,216,0.03)' : 'transparent',
-                                            cursor: 'pointer', transition: 'all 0.2s',
-                                        }}
-                                    >
-                                        <input type="radio" name="payment" checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} style={{ accentColor: '#00b4d8' }} />
-                                        <div>
-                                            <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '0.9rem' }}>Cash on Delivery (COD)</p>
-                                            <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>Pay when your order arrives</p>
-                                        </div>
-                                    </label>
+                                    {paymentSettings.cod_enabled && (
+                                        <label
+                                            onClick={() => setPaymentMethod('COD')}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
+                                                borderRadius: '0.75rem',
+                                                border: paymentMethod === 'COD' ? '2px solid #00b4d8' : '2px solid #e8e4dc',
+                                                background: paymentMethod === 'COD' ? 'rgba(0,180,216,0.03)' : 'transparent',
+                                                cursor: 'pointer', transition: 'all 0.2s',
+                                            }}
+                                        >
+                                            <input type="radio" name="payment" checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} style={{ accentColor: '#00b4d8' }} />
+                                            <div>
+                                                <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '0.9rem' }}>Cash on Delivery (COD)</p>
+                                                <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>Pay when your order arrives</p>
+                                            </div>
+                                        </label>
+                                    )}
 
-                                    <label
-                                        onClick={() => setPaymentMethod('Razorpay')}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
-                                            borderRadius: '0.75rem',
-                                            border: paymentMethod === 'Razorpay' ? '2px solid #00b4d8' : '2px solid #e8e4dc',
-                                            background: paymentMethod === 'Razorpay' ? 'rgba(0,180,216,0.03)' : 'transparent',
-                                            cursor: 'pointer', transition: 'all 0.2s',
-                                        }}
-                                    >
-                                        <input type="radio" name="payment" checked={paymentMethod === 'Razorpay'} onChange={() => setPaymentMethod('Razorpay')} style={{ accentColor: '#00b4d8' }} />
-                                        <div>
-                                            <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '0.9rem' }}>Online Payment (Razorpay)</p>
-                                            <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>UPI / Card / Netbanking / Wallet</p>
-                                        </div>
-                                    </label>
+                                    {paymentSettings.razorpay_enabled && (
+                                        <label
+                                            onClick={() => setPaymentMethod('Razorpay')}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
+                                                borderRadius: '0.75rem',
+                                                border: paymentMethod === 'Razorpay' ? '2px solid #00b4d8' : '2px solid #e8e4dc',
+                                                background: paymentMethod === 'Razorpay' ? 'rgba(0,180,216,0.03)' : 'transparent',
+                                                cursor: 'pointer', transition: 'all 0.2s',
+                                            }}
+                                        >
+                                            <input type="radio" name="payment" checked={paymentMethod === 'Razorpay'} onChange={() => setPaymentMethod('Razorpay')} style={{ accentColor: '#00b4d8' }} />
+                                            <div>
+                                                <p style={{ fontWeight: 600, color: '#0a0a23', fontSize: '0.9rem' }}>Online Payment (Razorpay)</p>
+                                                <p style={{ fontSize: '0.75rem', color: '#9e9eb8' }}>
+                                                    {[
+                                                        paymentSettings.razorpay_upi && 'UPI',
+                                                        paymentSettings.razorpay_card && 'Card',
+                                                        paymentSettings.razorpay_netbanking && 'Netbanking',
+                                                        paymentSettings.razorpay_wallet && 'Wallet',
+                                                        paymentSettings.razorpay_emi && 'EMI',
+                                                    ].filter(Boolean).join(' / ') || 'Online payment'}
+                                                </p>
+                                            </div>
+                                        </label>
+                                    )}
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem', flexWrap: 'wrap' }}>
