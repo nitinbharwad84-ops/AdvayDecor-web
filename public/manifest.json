@@ -1,0 +1,23 @@
+{
+    "name": "AdvayDecor — Artisanal Home Decor",
+    "short_name": "AdvayDecor",
+    "description": "Discover curated, artisanal home decor. Premium cushions, artistic accents, and stylish solutions to transform your living space.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#fdfbf7",
+    "theme_color": "#00b4d8",
+    "icons": [
+        {
+            "src": "/logo.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

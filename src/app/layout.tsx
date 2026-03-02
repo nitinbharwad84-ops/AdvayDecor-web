@@ -11,6 +11,13 @@ export const metadata: Metadata = {
   title: "AdvayDecor — Elevate Your Space with Elegance & Style",
   description: "Discover curated, artisanal home decor. Premium cushions, artistic accents, and stylish solutions to transform your living space. Pan-India delivery.",
   keywords: ["home decor", "cushions", "interior design", "artisanal", "India", "AdvayDecor"],
+  manifest: "/manifest.json",
+  themeColor: "#00b4d8",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AdvayDecor",
+  },
   alternates: {
     canonical: '/',
   },
@@ -26,6 +33,26 @@ export const metadata: Metadata = {
     siteName: "AdvayDecor",
   },
 };
+
+// PWA Service Worker Registration
+const PwaRegistration = () => (
+  <Script id="register-sw" strategy="afterInteractive">
+    {`
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').then(
+            function(registration) {
+              console.log('PWA: Service Worker registered successfully');
+            },
+            function(err) {
+              console.log('PWA: Service Worker registration failed: ', err);
+            }
+          );
+        });
+      }
+    `}
+  </Script>
+);
 
 export default function RootLayout({
   children,
@@ -88,6 +115,7 @@ export default function RootLayout({
             },
           }}
         />
+        <PwaRegistration />
         <ConditionalNavbar />
         <main className="flex-1">
           {children}
