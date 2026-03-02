@@ -8,14 +8,14 @@ This document outlines the remaining technical improvements for the AdvayDecor e
 
 | Rank | Task | Complexity | Effort | Impact | Definition |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1** | **DB Connection Pooling** | **Low** | 15 min | 🟡 Med | Switching to Supabase's "PgBouncer" URL so the site can handle 1,000+ simultaneous database requests safely. |
-| **2** | **Cache Products API** | **Low** | 30 min | 🟡 Med | Adding Cache-Control or ISR so the product list loads instantly by using a "remembered" copy instead of hitting the DB every time. |
-| **3** | **Global Error Pages** | **Low** | 30 min | 🟡 Med | Creating `error.tsx` and `not-found.tsx` so users see a beautiful branded page if something breaks. |
-| **4** | **Stock Validation** | **Medium** | 1 hr | 🔴 High | Verifying stock availability at the exact second the "Pay" button is clicked to prevent "Overselling." |
-| **5** | **PWA Support** | **Medium** | 1 hr | 🟢 Low | Adding a web manifest and service worker so customers can "Install" the site on their phone home-screen like a mobile app. |
-| **6** | **Product Search** | **Medium** | 2 hrs | 🟡 Med | Implementing a text-based search (e.g., searching "Velvet") using Supabase's `ilike` or Full-Text Search. |
-| **7** | **API Rate Limiting** | **Medium** | 2 hrs | 🔴 High | Security layer that blocks bots from spamming your "Send OTP" or "Review" endpoints 100 times a second. |
-| **8** | **Razorpay Webhooks** | **High** | 3 hrs | 🟡 Med | Allowing Razorpay to talk directly to your server to confirm payment, even if the customer closes their tab during checkout. |
+
+| **1** | **Cache Products API** | **Low** | 30 min | 🟡 Med | Adding Cache-Control or ISR so the product list loads instantly by using a "remembered" copy instead of hitting the DB every time. |
+| **2** | **Global Error Pages** | **Low** | 30 min | 🟡 Med | Creating `error.tsx` and `not-found.tsx` so users see a beautiful branded page if something breaks. |
+| **3** | **Stock Validation** | **Medium** | 1 hr | 🔴 High | Verifying stock availability at the exact second the "Pay" button is clicked to prevent "Overselling." |
+| **4** | **PWA Support** | **Medium** | 1 hr | 🟢 Low | Adding a web manifest and service worker so customers can "Install" the site on their phone home-screen like a mobile app. |
+| **5** | **Product Search** | **Medium** | 2 hrs | 🟡 Med | Implementing a text-based search (e.g., searching "Velvet") using Supabase's `ilike` or Full-Text Search. |
+| **6** | **API Rate Limiting** | **Medium** | 2 hrs | 🔴 High | Security layer that blocks bots from spamming your "Send OTP" or "Review" endpoints 100 times a second. |
+| **7** | **Razorpay Webhooks** | **High** | 3 hrs | 🟡 Med | Allowing Razorpay to talk directly to your server to confirm payment, even if the customer closes their tab during checkout. |
 
 ---
 
