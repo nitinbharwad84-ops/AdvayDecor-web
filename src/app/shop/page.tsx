@@ -1,8 +1,6 @@
-'use client';
-
-import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { SlidersHorizontal, Grid3X3, LayoutGrid, ChevronDown } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SlidersHorizontal, Grid3X3, LayoutGrid, ChevronDown, Search, X } from 'lucide-react';
 import ProductCard from '@/components/shop/ProductCard';
 import type { Product } from '@/types';
 
@@ -12,6 +10,8 @@ export default function ShopPage() {
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState('newest');
+    const [searchQuery, setSearchQuery] = useState('');
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Dynamically derive categories from products
     const categories = useMemo(() => {
@@ -32,8 +32,17 @@ export default function ShopPage() {
     }, []);
 
     const sortedProducts = useMemo(() => {
+        const query = searchQuery.toLowerCase().trim();
         let items = allProducts.filter(
-            (p) => p.is_active && (selectedCategory === 'All' || p.category === selectedCategory)
+            (p) => {
+                const is_active = p.is_active;
+                const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+                const matchesSearch = !query ||
+                    p.title.toLowerCase().includes(query) ||
+                    (p.description && p.description.toLowerCase().includes(query));
+
+                return is_active && matchesCategory && matchesSearch;
+            }
         );
 
         if (sortBy === 'price-low') {
@@ -47,7 +56,7 @@ export default function ShopPage() {
         }
 
         return items;
-    }, [selectedCategory, sortBy, allProducts]);
+    }, [selectedCategory, sortBy, allProducts, searchQuery]);
 
     return (
         <div style={{ paddingTop: 'var(--nav-height, 80px)' }}>
@@ -112,12 +121,12 @@ export default function ShopPage() {
                         flexWrap: 'wrap',
                         gap: '1rem',
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: '300px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#64648b' }}>
                                 <SlidersHorizontal size={16} />
                                 <span>Filter:</span>
                             </div>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem', scrollbarWidth: 'none' }}>
                                 {categories.map((cat) => (
                                     <button
                                         key={cat}
@@ -132,11 +141,71 @@ export default function ShopPage() {
                                             transition: 'all 0.3s ease',
                                             background: selectedCategory === cat ? '#0a0a23' : '#f5f0e8',
                                             color: selectedCategory === cat ? '#fff' : '#64648b',
+                                            whiteSpace: 'nowrap'
                                         }}
                                     >
                                         {cat}
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+
+                        {/* Search Bar */}
+                        <div style={{ position: 'relative', flex: 1, maxWidth: '400px', minWidth: '240px' }}>
+                            <div style={{
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                background: '#fff',
+                                borderRadius: '1rem',
+                                border: '1px solid #f0ece4',
+                                padding: '0 1rem',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+                            }}>
+                                <Search size={18} style={{ color: '#9e9eb8', marginRight: '0.75rem' }} />
+                                <input
+                                    ref={searchInputRef}
+                                    type="text"
+                                    placeholder="Search products..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{
+                                        border: 'none',
+                                        background: 'transparent',
+                                        padding: '0.75rem 0',
+                                        fontSize: '0.9rem',
+                                        color: '#0a0a23',
+                                        outline: 'none',
+                                        width: '100%',
+                                        fontWeight: 500
+                                    }}
+                                />
+                                <AnimatePresence>
+                                    {searchQuery && (
+                                        <motion.button
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.8 }}
+                                            onClick={() => setSearchQuery('')}
+                                            style={{
+                                                background: '#f5f0e8',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '20px',
+                                                height: '20px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                cursor: 'pointer',
+                                                color: '#64648b',
+                                                marginLeft: '0.5rem'
+                                            }}
+                                        >
+                                            <X size={12} strokeWidth={3} />
+                                        </motion.button>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
 
@@ -229,7 +298,12 @@ export default function ShopPage() {
 
                     {!loading && sortedProducts.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '5rem 0' }}>
-                            <p style={{ color: '#9e9eb8', fontSize: '1.1rem' }}>No products found in this category.</p>
+                            <p style={{ color: '#0a0a23', fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>No products found</p>
+                            <p style={{ color: '#9e9eb8', fontSize: '1rem' }}>
+                                {searchQuery
+                                    ? `We couldn't find anything matching "${searchQuery}".`
+                                    : "No products found in this category."}
+                            </p>
                         </div>
                     )}
                 </div>

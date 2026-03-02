@@ -172,6 +172,7 @@ export default function Navbar() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                         {/* Search (desktop only) */}
                         <button
+                            onClick={() => router.push('/shop')}
                             className="hidden md:flex"
                             style={{
                                 alignItems: 'center',
@@ -439,6 +440,36 @@ export default function Navbar() {
                                         </motion.div>
                                     );
                                 })}
+
+                                {/* Mobile Search Link */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.1 + navLinks.length * 0.05 }}
+                                >
+                                    <Link
+                                        href="/shop"
+                                        onClick={() => setIsMobileOpen(false)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '1rem 1rem',
+                                            borderRadius: '0.75rem',
+                                            textDecoration: 'none',
+                                            fontSize: '1rem',
+                                            fontWeight: 500,
+                                            color: '#0a0a23',
+                                            transition: 'all 0.2s ease',
+                                        }}
+                                    >
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <Search size={18} style={{ color: '#9e9eb8' }} />
+                                            Search
+                                        </span>
+                                        <ChevronRight size={16} style={{ color: '#9e9eb8' }} />
+                                    </Link>
+                                </motion.div>
                             </nav>
 
                             {/* Bottom — auth-aware */}
