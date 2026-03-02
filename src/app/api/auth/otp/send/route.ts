@@ -12,16 +12,13 @@ export async function POST(request: Request) {
 
         const admin = createAdminClient();
 
-        // 1. Check if user already exists in auth.users
-        const { data: { users }, error: listError } = await admin.auth.admin.listUsers();
+        // 1. Check if user already exists in profiles or admin_users (O(1) lookup)
+        const [{ data: profile }, { data: adminUser }] = await Promise.all([
+            admin.from('profiles').select('id').eq('email', email).maybeSingle(),
+            admin.from('admin_users').select('id').eq('email', email).maybeSingle()
+        ]);
 
-        if (listError) {
-            console.error('Error listing users:', listError);
-            return NextResponse.json({ error: 'Failed to verify email availability' }, { status: 500 });
-        }
-
-        const existingUser = users.find(u => u.email === email);
-        if (existingUser) {
+        if (profile || adminUser) {
             return NextResponse.json({ error: 'An account with this email already exists' }, { status: 400 });
         }
 

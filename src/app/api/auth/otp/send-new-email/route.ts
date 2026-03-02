@@ -20,12 +20,13 @@ export async function POST(request: Request) {
 
         const admin = createAdminClient();
 
-        // 1. Check if new email is already taken
-        const { data: { users }, error: listError } = await admin.auth.admin.listUsers();
-        if (listError) throw listError;
+        // 1. Check if new email is already taken (O(1) lookup on indexed columns)
+        const [{ data: profile }, { data: adminUser }] = await Promise.all([
+            admin.from('profiles').select('id').eq('email', newEmail).maybeSingle(),
+            admin.from('admin_users').select('id').eq('email', newEmail).maybeSingle()
+        ]);
 
-        const emailExists = users.some(u => u.email?.toLowerCase() === newEmail.toLowerCase());
-        if (emailExists) {
+        if (profile || adminUser) {
             return NextResponse.json({ error: 'This email is already associated with another account' }, { status: 400 });
         }
 
