@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id),
   guest_info JSONB,
-  status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned')),
+  status TEXT DEFAULT 'Pending' CHECK (status IN ('Awaiting Payment', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned')),
   total_amount DECIMAL(10,2) NOT NULL,
   shipping_fee DECIMAL(10,2) DEFAULT 0,
   shipping_address JSONB NOT NULL,

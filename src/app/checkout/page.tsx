@@ -602,8 +602,8 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: '2rem' }}>
-                    {/* Left Column */}
-                    <div className="lg:col-span-2">
+                    {/* Left Column - Spans full width on confirmation */}
+                    <div className={step === 'confirmation' ? "lg:col-span-3" : "lg:col-span-2"}>
                         {/* Shipping Form */}
                         {step === 'shipping' && (
                             <motion.form
@@ -867,7 +867,16 @@ export default function CheckoutPage() {
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                style={{ padding: 'clamp(2rem, 5vw, 3rem)', borderRadius: '1rem', background: '#fff', border: '1px solid #f0ece4', textAlign: 'center' }}
+                                style={{
+                                    padding: 'clamp(2rem, 5vw, 4rem)',
+                                    borderRadius: '1.5rem',
+                                    background: '#fff',
+                                    border: '1px solid #f0ece4',
+                                    textAlign: 'center',
+                                    maxWidth: '800px',
+                                    margin: '0 auto',
+                                    boxShadow: '0 20px 40px rgba(0,0,0,0.05)'
+                                }}
                             >
                                 <motion.div
                                     initial={{ scale: 0 }}
@@ -895,11 +904,22 @@ export default function CheckoutPage() {
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
                                     <Link
+                                        href={`/orders/${orderId}`}
+                                        style={{
+                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                            padding: '0.875rem 2rem', background: 'linear-gradient(135deg, #00b4d8, #0096b7)', color: '#fff',
+                                            borderRadius: '0.75rem', fontWeight: 600, textDecoration: 'none', fontSize: '0.95rem',
+                                            boxShadow: '0 4px 16px rgba(0,180,216,0.25)',
+                                        }}
+                                    >
+                                        View Order Details
+                                    </Link>
+                                    <Link
                                         href="/shop"
                                         style={{
                                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                            padding: '0.75rem 1.5rem', background: '#00b4d8', color: '#fff',
-                                            borderRadius: '0.75rem', fontWeight: 600, textDecoration: 'none', fontSize: '0.875rem',
+                                            padding: '0.75rem 1.5rem', border: '1px solid #e8e4dc',
+                                            borderRadius: '0.75rem', color: '#0a0a23', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 600,
                                         }}
                                     >
                                         Continue Shopping
@@ -908,8 +928,7 @@ export default function CheckoutPage() {
                                         href="/"
                                         style={{
                                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                            padding: '0.75rem 1.5rem', border: '1px solid #e8e4dc',
-                                            borderRadius: '0.75rem', color: '#64648b', textDecoration: 'none', fontSize: '0.875rem',
+                                            padding: '0.5rem 1rem', color: '#94a3b8', textDecoration: 'none', fontSize: '0.8rem',
                                         }}
                                     >
                                         Back to Home

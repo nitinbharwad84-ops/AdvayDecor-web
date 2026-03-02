@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Package, ArrowRight, LogOut, Clock, PenLine, Save, X, Phone, MessageSquare, HelpCircle, ChevronRight, RefreshCw, MapPin, Plus, Trash2, Heart } from 'lucide-react';
+import { User, Mail, Package, ArrowRight, LogOut, Clock, PenLine, Save, X, Phone, MessageSquare, HelpCircle, ChevronRight, ChevronDown, RefreshCw, MapPin, Plus, Trash2, Heart, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase';
 import { useUserAuthStore } from '@/lib/auth-store';
@@ -18,6 +18,12 @@ interface Order {
     status: string;
     total_amount: number;
     items: any[];
+    shipping_address?: any;
+    payment_method?: string;
+    payment_id?: string | null;
+    shipping_fee?: number;
+    discount_amount?: number;
+    coupon_code?: string | null;
 }
 
 interface UserProfile {
@@ -105,6 +111,7 @@ export default function ProfilePage() {
     const [editName, setEditName] = useState('');
     const [editPhone, setEditPhone] = useState('');
     const [activeTab, setActiveTab] = useState('profile');
+    const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
     const tabs = [
         { id: 'profile', name: 'Profile Details', icon: User },
@@ -1118,33 +1125,126 @@ export default function ProfilePage() {
                                                     <Package size={32} />
                                                 </div>
                                                 <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>No orders yet</h3>
-                                                <p style={{ color: '#64648b', marginBottom: '1.5rem' }}>Looks like you haven't placed any orders yet.</p>
+                                                <p style={{ color: '#64648b', marginBottom: '1.5rem' }}>Looks like you haven&apos;t placed any orders yet.</p>
                                                 <Link href="/shop" style={{ display: 'inline-block', padding: '0.75rem 1.5rem', borderRadius: '2rem', background: '#0a0a23', color: '#fff', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}>
                                                     Start Shopping
                                                 </Link>
                                             </div>
                                         ) : (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                                {orders.map((order) => (
-                                                    <div key={order.id} style={{ background: '#fdfbf7', borderRadius: '1rem', padding: '1.5rem', border: '1px solid #f0ece4' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                                                            <div>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-                                                                    <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0a0a23' }}>Order #{order.id.slice(0, 8)}</span>
-                                                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '1rem', background: order.status === 'Delivered' ? '#dcfce7' : order.status === 'Cancelled' ? '#fee2e2' : '#e0f2fe', color: order.status === 'Delivered' ? '#166534' : order.status === 'Cancelled' ? '#b91c1c' : '#0369a1' }}>
-                                                                        {order.status}
-                                                                    </span>
+                                                {orders.map((order) => {
+                                                    const isExpanded = expandedOrderId === order.id;
+                                                    return (
+                                                        <div key={order.id} style={{
+                                                            background: '#fdfbf7', borderRadius: '1rem',
+                                                            border: isExpanded ? '1px solid #00b4d8' : '1px solid #f0ece4',
+                                                            transition: 'all 0.3s ease',
+                                                            overflow: 'hidden',
+                                                        }}>
+                                                            {/* Clickable Order Header */}
+                                                            <div
+                                                                onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                                                                style={{
+                                                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                                    padding: '1.25rem 1.5rem', cursor: 'pointer',
+                                                                    flexWrap: 'wrap', gap: '0.75rem',
+                                                                }}
+                                                            >
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+                                                                    <div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+                                                                            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0a0a23' }}>Order #{order.id.slice(0, 8)}</span>
+                                                                            <span style={{
+                                                                                fontSize: '0.7rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '1rem',
+                                                                                background: order.status === 'Delivered' ? '#dcfce7' : order.status === 'Cancelled' ? '#fee2e2' : order.status === 'Processing' ? '#ede9fe' : order.status === 'Shipped' ? '#cffafe' : '#e0f2fe',
+                                                                                color: order.status === 'Delivered' ? '#166534' : order.status === 'Cancelled' ? '#b91c1c' : order.status === 'Processing' ? '#7c3aed' : order.status === 'Shipped' ? '#0891b2' : '#0369a1'
+                                                                            }}>
+                                                                                {order.status}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64648b', fontSize: '0.8rem' }}>
+                                                                            <Clock size={13} /> {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64648b', fontSize: '0.85rem' }}>
-                                                                    <Clock size={14} /> {new Date(order.created_at).toLocaleDateString()}
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                                    <p style={{ fontSize: '1.1rem', fontWeight: 700, color: '#00b4d8' }}>{formatCurrency(order.total_amount)}</p>
+                                                                    <ChevronDown
+                                                                        size={18}
+                                                                        style={{
+                                                                            color: '#94a3b8',
+                                                                            transition: 'transform 0.3s ease',
+                                                                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                                        }}
+                                                                    />
                                                                 </div>
                                                             </div>
-                                                            <div style={{ textAlign: 'right' }}>
-                                                                <p style={{ fontSize: '1.1rem', fontWeight: 700, color: '#00b4d8' }}>{formatCurrency(order.total_amount)}</p>
-                                                            </div>
+
+                                                            {/* Expandable Details Section */}
+                                                            <AnimatePresence>
+                                                                {isExpanded && (
+                                                                    <motion.div
+                                                                        initial={{ height: 0, opacity: 0 }}
+                                                                        animate={{ height: 'auto', opacity: 1 }}
+                                                                        exit={{ height: 0, opacity: 0 }}
+                                                                        transition={{ duration: 0.3 }}
+                                                                        style={{ overflow: 'hidden' }}
+                                                                    >
+                                                                        <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid #f0ece4' }}>
+                                                                            <div style={{ paddingTop: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                                                                                <div>
+                                                                                    <p style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem' }}>Payment</p>
+                                                                                    <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0a0a23' }}>
+                                                                                        {order.payment_method === 'COD' ? '💵 Cash on Delivery' : '💳 Razorpay'}
+                                                                                    </p>
+                                                                                </div>
+                                                                                {order.payment_id && (
+                                                                                    <div>
+                                                                                        <p style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem' }}>Transaction ID</p>
+                                                                                        <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0a0a23', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                                                                                            {order.payment_id}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+                                                                                {order.shipping_address && (
+                                                                                    <div>
+                                                                                        <p style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem' }}>Shipping To</p>
+                                                                                        <p style={{ fontSize: '0.85rem', color: '#0a0a23', fontWeight: 500 }}>
+                                                                                            {order.shipping_address.full_name}<br />
+                                                                                            <span style={{ color: '#64648b', fontSize: '0.8rem' }}>
+                                                                                                {order.shipping_address.city}, {order.shipping_address.state}
+                                                                                            </span>
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+                                                                                {order.shipping_fee !== undefined && order.shipping_fee > 0 && (
+                                                                                    <div>
+                                                                                        <p style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem' }}>Shipping Fee</p>
+                                                                                        <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0a0a23' }}>{formatCurrency(order.shipping_fee)}</p>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+
+                                                                            <Link
+                                                                                href={`/orders/${order.id}`}
+                                                                                style={{
+                                                                                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                                                                                    padding: '0.7rem 1.25rem', background: 'linear-gradient(135deg, #00b4d8, #0096b7)',
+                                                                                    color: '#fff', borderRadius: '0.65rem', fontWeight: 600,
+                                                                                    textDecoration: 'none', fontSize: '0.85rem',
+                                                                                    boxShadow: '0 3px 12px rgba(0,180,216,0.2)',
+                                                                                    transition: 'all 0.2s',
+                                                                                }}
+                                                                            >
+                                                                                <ExternalLink size={15} /> View Full Details
+                                                                            </Link>
+                                                                        </div>
+                                                                    </motion.div>
+                                                                )}
+                                                            </AnimatePresence>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
