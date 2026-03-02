@@ -329,6 +329,20 @@ CREATE INDEX IF NOT EXISTS idx_reviews_product ON product_reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_contact_status ON contact_messages(status);
 CREATE INDEX IF NOT EXISTS idx_faq_status ON faq_questions(status);
 
+-- Performance indexes (added for scalability)
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_id ON orders(payment_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_order_items_product ON order_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_images_product ON product_images(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_images_order ON product_images(product_id, display_order);
+CREATE INDEX IF NOT EXISTS idx_product_variants_parent ON product_variants(parent_product_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_user ON product_reviews(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_product_approved ON product_reviews(product_id, is_approved);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
+CREATE INDEX IF NOT EXISTS idx_coupons_active ON coupons(is_active, expires_at);
+
 
 -- =====================================================================
 -- SECTION 5: ROW LEVEL SECURITY (RLS)

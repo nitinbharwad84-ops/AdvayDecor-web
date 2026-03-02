@@ -80,12 +80,6 @@
 ## ⚠️ What Can Be Improved (Not Blocking but Worth Knowing)
 
 
-### 3. 🟡 No Database Indexes on Frequently Queried Columns
-**Problem:** There may be no explicit indexes on columns like `orders.status`, `product_reviews.product_id`, or `orders.user_id`.  
-**Fix:** Add indexes in Supabase SQL Editor: `CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);` etc.  
-**Fix Complexity:** 🟢 **Low** (Just running SQL commands)  
-**Severity:** 🟡 Medium (matters above ~10K orders)
-
 ### 4. 🟡 Revenue Calculation Scans All Orders
 **File:** `src/app/api/admin/dashboard/route.ts`  
 **Problem:** Dashboard fetches every single order to calculate revenue in the browser. At 50K orders, this is extremely slow and memory-intensive.  
@@ -132,8 +126,8 @@
 | Priority | Fix | Effort | Impact | Status |
 |:---:|:---|:---:|:---:|:---:|
 | 🔴 **1** | Replace `listUsers()` with O(1) DB lookup | 15 min | Removes biggest bottleneck | ✅ Done |
-| � **2** | Redis-based Rate Limiting (Upstash) | 2 hrs | Hardens security against bots | ✅ Done |
-| �🟡 **3** | Add database indexes on orders, reviews, order_items | 10 min | Faster queries at scale | To do |
+|  **2** | Redis-based Rate Limiting (Upstash) | 2 hrs | Hardens security against bots | ✅ Done |
+| 🟡 **3** | Add database indexes (27 total now) | 10 min | Faster queries at scale | ✅ Done |
 | 🟡 **4** | Replace revenue scan with SQL `SUM()` function | 15 min | Admin dashboard stays fast | To do |
 | 🟢 **5** | Remove bucket existence check in upload route | 5 min | Minor cleanup | To do |
 
