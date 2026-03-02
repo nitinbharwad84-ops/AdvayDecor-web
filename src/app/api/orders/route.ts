@@ -274,7 +274,14 @@ export async function POST(request: Request) {
                                 </p>
                             </div>
 
-                            <div style="text-align: center; background: #00b4d8; color: white; padding: 15px; border-radius: 8px;">
+                            <div style="text-align: center; margin: 32px 0;">
+                                <a href="${process.env.NEXT_PUBLIC_SITE_URL}/orders/${order.id}" 
+                                   style="background-color: #00b4d8; color: white; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 12px rgba(0,180,216,0.2);">
+                                    View Full Order Details
+                                </a>
+                            </div>
+
+                            <div style="text-align: center; background: #f8fafc; color: #0a0a23; padding: 15px; border-radius: 8px; border: 1px solid #f0ece4;">
                                 <p style="margin: 0; font-weight: 600;">Payment Method: ${payment_method === 'COD' ? 'Cash on Delivery' : 'Online Payment'}</p>
                             </div>
 

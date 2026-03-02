@@ -270,7 +270,7 @@ export default function CheckoutPage() {
         const data = await res.json();
 
         if (res.ok && data.order_id) {
-            setOrderId(data.order_id.substring(0, 8).toUpperCase());
+            setOrderId(data.order_id);
             setStep('confirmation');
             clearCart();
         } else if (data.out_of_stock && data.out_of_stock.length > 0) {
@@ -414,7 +414,7 @@ export default function CheckoutPage() {
                                     }),
                                 });
 
-                                setOrderId(internalOrderId.substring(0, 8).toUpperCase());
+                                setOrderId(internalOrderId);
                                 setStep('confirmation');
                                 clearCart();
                             } else {
@@ -896,7 +896,7 @@ export default function CheckoutPage() {
                                     Order Placed Successfully!
                                 </h2>
                                 <p style={{ color: '#64648b', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                                    Your order <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0a0a23' }}>{orderId}</span> has been confirmed.
+                                    Your order <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0a0a23' }}>#{orderId.substring(0, 8).toUpperCase()}</span> has been confirmed.
                                 </p>
                                 <p style={{ fontSize: '0.8rem', color: '#9e9eb8', marginBottom: '2rem' }}>
                                     You&apos;ll receive an email confirmation shortly. Estimated delivery in 5-7 business days.
