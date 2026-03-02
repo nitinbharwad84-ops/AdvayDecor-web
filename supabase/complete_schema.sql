@@ -458,4 +458,19 @@ CREATE POLICY "Admin manage" ON storage.objects FOR ALL USING (bucket_id = 'prod
 -- FINAL ACTIONS
 -- =====================================================================
 NOTIFY pgrst, 'reload schema';
+-- =====================================================================
+-- SECTION 9: INITIAL ADMIN SETUP (MANUAL STEP)
+-- =====================================================================
+-- After signing up on the website, follow these steps to gain Admin access:
+-- 1. Go to Supabase Dashboard -> Auth -> Users
+-- 2. Copy your User ID (UUID)
+-- 3. Replace 'PASTE_YOUR_ID_HERE' and 'your@email.com' below and Run:
+
+/*
+INSERT INTO public.admin_users (id, email, full_name, role, is_protected)
+VALUES ('PASTE_YOUR_ID_HERE', 'your@email.com', 'Super Admin', 'super_admin', TRUE)
+ON CONFLICT (id) DO UPDATE 
+SET role = 'super_admin', is_protected = TRUE;
+*/
+
 SELECT '✅ AdvayDecor MASTER SCHEMA applied successfully!' AS status;
