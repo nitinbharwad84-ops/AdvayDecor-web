@@ -76,6 +76,48 @@ export async function POST(request: Request) {
 
         const totalAmount = Math.max(0, itemsTotal - finalDiscount) + (shipping_fee || 0);
 
+        // ========================================================
+        // STOCK VALIDATION (Safety-First Approach)
+        // ========================================================
+        // Rule 1: Check stock BEFORE creating the order.
+        // Rule 2: If the check fails technically, ALLOW the order (don't lose a sale over a glitch).
+        // Rule 3: Only block the order if stock is genuinely insufficient.
+        // ========================================================
+        const outOfStockItems: string[] = [];
+
+        try {
+            for (const item of items) {
+                // Only validate stock for items that have a variant (stock is tracked on variants)
+                if (item.variant_id) {
+                    const { data: variant } = await admin
+                        .from('product_variants')
+                        .select('variant_name, stock_quantity')
+                        .eq('id', item.variant_id)
+                        .single();
+
+                    if (variant && variant.stock_quantity !== null && variant.stock_quantity < item.quantity) {
+                        const name = `${item.product_title} (${variant.variant_name})`;
+                        if (variant.stock_quantity === 0) {
+                            outOfStockItems.push(`${name} is out of stock`);
+                        } else {
+                            outOfStockItems.push(`${name} — only ${variant.stock_quantity} left in stock`);
+                        }
+                    }
+                }
+            }
+        } catch (stockCheckError) {
+            // Technical failure during stock check — log it but DO NOT block the order
+            console.warn('Stock check encountered an error (order will proceed):', stockCheckError);
+        }
+
+        // If any items are genuinely out of stock, block the order with a clear message
+        if (outOfStockItems.length > 0) {
+            return NextResponse.json({
+                error: 'Some items are no longer available',
+                out_of_stock: outOfStockItems,
+            }, { status: 409 }); // 409 Conflict
+        }
+
         // Insert order
         const { data: order, error: orderError } = await admin
             .from('orders')
@@ -129,6 +171,23 @@ export async function POST(request: Request) {
                 order_id: order.id,
                 warning: 'Order created but some items may not have been saved',
             });
+        }
+
+        // ========================================================
+        // DEDUCT STOCK (Only after successful order + items insert)
+        // ========================================================
+        try {
+            for (const item of items) {
+                if (item.variant_id) {
+                    await admin.rpc('decrement_stock', {
+                        p_variant_id: item.variant_id,
+                        p_quantity: item.quantity,
+                    });
+                }
+            }
+        } catch (stockDeductError) {
+            // Log but don't fail the order — admin can reconcile manually
+            console.warn('Stock deduction warning (order was placed successfully):', stockDeductError);
         }
 
         // --- Send Order Confirmation Email ---

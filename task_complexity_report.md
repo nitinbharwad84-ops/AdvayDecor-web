@@ -9,11 +9,10 @@ This document outlines the remaining technical improvements for the AdvayDecor e
 | Rank | Task | Complexity | Effort | Impact | Definition |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 
-| **1** | **Stock Validation** | **Medium** | 1 hr | 🔴 High | Verifying stock availability at the exact second the "Pay" button is clicked to prevent "Overselling." |
-| **2** | **PWA Support** | **Medium** | 1 hr | 🟢 Low | Adding a web manifest and service worker so customers can "Install" the site on their phone home-screen like a mobile app. |
-| **3** | **Product Search** | **Medium** | 2 hrs | 🟡 Med | Implementing a text-based search (e.g., searching "Velvet") using Supabase's `ilike` or Full-Text Search. |
-| **4** | **API Rate Limiting** | **Medium** | 2 hrs | 🔴 High | Security layer that blocks bots from spamming your "Send OTP" or "Review" endpoints 100 times a second. |
-| **5** | **Razorpay Webhooks** | **High** | 3 hrs | 🟡 Med | Allowing Razorpay to talk directly to your server to confirm payment, even if the customer closes their tab during checkout. |
+| **1** | **PWA Support** | **Medium** | 1 hr | 🟢 Low | Adding a web manifest and service worker so customers can "Install" the site on their phone home-screen like a mobile app. |
+| **2** | **Product Search** | **Medium** | 2 hrs | 🟡 Med | Implementing a text-based search (e.g., searching "Velvet") using Supabase's `ilike` or Full-Text Search. |
+| **3** | **API Rate Limiting** | **Medium** | 2 hrs | 🔴 High | Security layer that blocks bots from spamming your "Send OTP" or "Review" endpoints 100 times a second. |
+| **4** | **Razorpay Webhooks** | **High** | 3 hrs | 🟡 Med | Allowing Razorpay to talk directly to your server to confirm payment, even if the customer closes their tab during checkout. |
 
 ---
 

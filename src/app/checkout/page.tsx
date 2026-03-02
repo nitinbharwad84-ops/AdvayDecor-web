@@ -273,6 +273,9 @@ export default function CheckoutPage() {
             setOrderId(data.order_id.substring(0, 8).toUpperCase());
             setStep('confirmation');
             clearCart();
+        } else if (data.out_of_stock && data.out_of_stock.length > 0) {
+            // Show specific stock error for each item
+            data.out_of_stock.forEach((msg: string) => toast.error(msg, { duration: 5000 }));
         } else {
             toast.error(data.error || 'Failed to place order. Please try again.');
         }
