@@ -9,8 +9,7 @@ This document outlines the remaining technical improvements for the AdvayDecor e
 | Rank | Task | Complexity | Effort | Impact | Definition |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 
-| **1** | **API Rate Limiting** | **Medium** | 2 hrs | 🔴 High | Security layer that blocks bots from spamming your "Send OTP" or "Review" endpoints 100 times a second. |
-| **2** | **Razorpay Webhooks** | **High** | 3 hrs | 🟡 Med | Allowing Razorpay to talk directly to your server to confirm payment, even if the customer closes their tab during checkout. |
+
 
 ---
 
