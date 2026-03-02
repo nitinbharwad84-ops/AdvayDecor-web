@@ -8,7 +8,12 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
 
     const { data: product } = await supabase
         .from('products')
-        .select('title, description, base_price, images')
+        .select(`
+            title, 
+            description, 
+            base_price, 
+            images:product_images(image_url)
+        `)
         .eq('slug', params.slug)
         .single();
 
@@ -18,20 +23,22 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
         };
     }
 
+    const firstImage = (product as any).images?.[0]?.image_url;
+
     return {
         title: `${product.title} | AdvayDecor`,
         description: product.description,
         openGraph: {
             title: product.title,
             description: product.description,
-            images: product.images && product.images.length > 0 ? [{ url: product.images[0] }] : [],
+            images: firstImage ? [{ url: firstImage }] : [],
             type: 'website',
         },
         twitter: {
             card: 'summary_large_image',
             title: product.title,
             description: product.description,
-            images: product.images && product.images.length > 0 ? [product.images[0]] : [],
+            images: firstImage ? [firstImage] : [],
         },
     };
 }
@@ -43,18 +50,26 @@ export default async function ProductLayout(props: { children: React.ReactNode, 
     const supabase = await createServerSupabaseClient();
     const { data: product } = await supabase
         .from('products')
-        .select('title, description, base_price, category, images')
+        .select(`
+            title, 
+            description, 
+            base_price, 
+            category, 
+            images:product_images(image_url)
+        `)
         .eq('slug', params.slug)
         .single();
 
     if (!product) return <>{children}</>;
+
+    const productImages = (product as any).images?.map((img: any) => img.image_url) || [];
 
     // 3. JSON-LD Structured Data for Google Rich Snippets
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'Product',
         name: product.title,
-        image: product.images && product.images.length > 0 ? product.images : undefined,
+        image: productImages.length > 0 ? productImages : undefined,
         description: product.description,
         sku: params.slug,
         category: product.category,
