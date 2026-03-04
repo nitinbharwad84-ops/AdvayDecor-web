@@ -389,43 +389,80 @@ BEGIN
 END $$;
 
 -- ── PROFILES ──
+DROP POLICY IF EXISTS "Users view own profile" ON profiles;
 CREATE POLICY "Users view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users update own profile" ON profiles;
 CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Admins manage profiles" ON profiles;
 CREATE POLICY "Admins manage profiles" ON profiles FOR ALL USING (public.is_admin());
 
 -- ── CATEGORIES ──
+DROP POLICY IF EXISTS "Public read categories" ON categories;
 CREATE POLICY "Public read categories" ON categories FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins manage categories" ON categories;
 CREATE POLICY "Admins manage categories" ON categories FOR ALL USING (public.is_admin());
 
 -- ── PRODUCTS ──
+DROP POLICY IF EXISTS "Public read active products" ON products;
 CREATE POLICY "Public read active products" ON products FOR SELECT USING (is_active = TRUE);
+
+DROP POLICY IF EXISTS "Admins manage products" ON products;
 CREATE POLICY "Admins manage products" ON products FOR ALL USING (public.is_admin());
 
 -- ── PRODUCT VARIANTS & IMAGES ──
+DROP POLICY IF EXISTS "Public read variants" ON product_variants;
 CREATE POLICY "Public read variants" ON product_variants FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins manage variants" ON product_variants;
 CREATE POLICY "Admins manage variants" ON product_variants FOR ALL USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Public read images" ON product_images;
 CREATE POLICY "Public read images" ON product_images FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins manage images" ON product_images;
 CREATE POLICY "Admins manage images" ON product_images FOR ALL USING (public.is_admin());
 
 -- ── ORDERS & ITEMS ──
+DROP POLICY IF EXISTS "Users view own orders" ON orders;
 CREATE POLICY "Users view own orders" ON orders FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users create orders" ON orders;
 CREATE POLICY "Users create orders" ON orders FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins manage orders" ON orders;
 CREATE POLICY "Admins manage orders" ON orders FOR ALL USING (public.is_admin());
 
+DROP POLICY IF EXISTS "Users view own order items" ON order_items;
 CREATE POLICY "Users view own order items" ON order_items FOR SELECT 
 USING (EXISTS (SELECT 1 FROM public.orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Admins manage order items" ON order_items;
 CREATE POLICY "Admins manage order items" ON order_items FOR ALL USING (public.is_admin());
 
 -- ── USER ADDRESSES ──
+DROP POLICY IF EXISTS "Users manage own addresses" ON user_addresses;
 CREATE POLICY "Users manage own addresses" ON user_addresses FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins read addresses" ON user_addresses;
 CREATE POLICY "Admins read addresses" ON user_addresses FOR SELECT USING (public.is_admin());
 
 -- ── REVIEWS & WISHLIST ──
+DROP POLICY IF EXISTS "Public read approved reviews" ON product_reviews;
 CREATE POLICY "Public read approved reviews" ON product_reviews FOR SELECT USING (is_approved = true);
+
+DROP POLICY IF EXISTS "Users manage own reviews" ON product_reviews;
 CREATE POLICY "Users manage own reviews" ON product_reviews FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins manage reviews" ON product_reviews;
 CREATE POLICY "Admins manage reviews" ON product_reviews FOR ALL USING (public.is_admin());
 
+DROP POLICY IF EXISTS "Users manage own wishlist" ON wishlists;
 CREATE POLICY "Users manage own wishlist" ON wishlists FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins view wishlists" ON wishlists;
 CREATE POLICY "Admins view wishlists" ON wishlists FOR SELECT USING (public.is_admin());
 
 
@@ -450,7 +487,11 @@ ON CONFLICT (key) DO NOTHING;
 -- =====================================================================
 
 INSERT INTO storage.buckets (id, name, public) VALUES ('product-images', 'product-images', true) ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Public read" ON storage.objects;
 CREATE POLICY "Public read" ON storage.objects FOR SELECT USING (bucket_id = 'product-images');
+
+DROP POLICY IF EXISTS "Admin manage" ON storage.objects;
 CREATE POLICY "Admin manage" ON storage.objects FOR ALL USING (bucket_id = 'product-images' AND public.is_admin());
 
 
@@ -472,5 +513,12 @@ VALUES ('PASTE_YOUR_ID_HERE', 'your@email.com', 'Super Admin', 'super_admin', TR
 ON CONFLICT (id) DO UPDATE 
 SET role = 'super_admin', is_protected = TRUE;
 */
+
+-- AUTO-ENABLE ADMIN ACCESS FOR adminnitin@email.com
+INSERT INTO public.admin_users (id, email, full_name, role, is_protected)
+SELECT id, email, 'Super Admin', 'super_admin', TRUE
+FROM auth.users
+WHERE email = 'adminnitin@email.com'
+ON CONFLICT (id) DO NOTHING;
 
 SELECT '✅ AdvayDecor MASTER SCHEMA applied successfully!' AS status;
