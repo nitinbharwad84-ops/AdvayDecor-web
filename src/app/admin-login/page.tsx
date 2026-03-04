@@ -55,8 +55,7 @@ export default function AdminLoginPage() {
             const adminUser = await verifyRes.json();
 
             if (!verifyRes.ok || !adminUser.role) {
-                console.error('[admin-login] Verification failed:', adminUser);
-                setError(`Access denied. Debug: ${JSON.stringify(adminUser.debug || adminUser)}`);
+                setError('Access denied. This account is not an admin.');
                 toast.error('Access denied. Not an admin account.');
                 await supabase.auth.signOut();
                 setIsLoading(false);
