@@ -39,7 +39,7 @@ function getClientIP(request: NextRequest): string {
     );
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     // ==============================
     // 1. Rate Limiting (POST only)
     // ==============================
