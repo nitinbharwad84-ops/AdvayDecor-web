@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 import ConditionalNavbar from "@/components/layout/ConditionalNavbar";
 import ConditionalFooter from "@/components/layout/ConditionalFooter";
@@ -6,16 +6,13 @@ import { Toaster } from "react-hot-toast";
 
 import Script from 'next/script';
 
-export const viewport: Viewport = {
-  themeColor: "#00b4d8",
-};
-
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.advaydecor.com'),
   title: "AdvayDecor — Elevate Your Space with Elegance & Style",
   description: "Discover curated, artisanal home decor. Premium cushions, artistic accents, and stylish solutions to transform your living space. Pan-India delivery.",
   keywords: ["home decor", "cushions", "interior design", "artisanal", "India", "AdvayDecor"],
   manifest: "/manifest.json",
+  themeColor: "#00b4d8",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
