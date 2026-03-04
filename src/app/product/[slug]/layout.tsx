@@ -75,7 +75,7 @@ export default async function ProductLayout(props: { children: React.ReactNode, 
         category: product.category,
         offers: {
             '@type': 'Offer',
-            url: `https://www.advaydecor.com/product/${params.slug}`,
+            url: `https://www.advaydecor.vercel.app/product/${params.slug}`,
             priceCurrency: 'INR',
             price: product.base_price,
             itemCondition: 'https://schema.org/NewCondition',

@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 export async function GET() {
     try {
         const admin = createAdminClient();
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.advaydecor.com';
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.advaydecor.vercel.app';
 
         const { data: products, error } = await admin
             .from('products')

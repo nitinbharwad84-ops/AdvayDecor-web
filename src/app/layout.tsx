@@ -11,7 +11,7 @@ import { Toaster } from "react-hot-toast";
 import Script from 'next/script';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.advaydecor.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.advaydecor.vercel.app'),
   title: "AdvayDecor — Elevate Your Space with Elegance & Style",
   description: "Discover curated, artisanal home decor. Premium cushions, artistic accents, and stylish solutions to transform your living space. Pan-India delivery.",
   keywords: ["home decor", "cushions", "interior design", "artisanal", "India", "AdvayDecor"],

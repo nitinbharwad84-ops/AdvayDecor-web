@@ -70,7 +70,7 @@ export default function NotFound() {
                     className="mt-16 pt-8 border-t border-[#f0ece4] text-sm text-[#9e9eb8]"
                 >
                     If you believe this is a technical error,
-                    please contact us at <span className="text-[#00b4d8]">support@advaydecor.com</span>
+                    please contact us at <span className="text-[#00b4d8]">hello@advaydecor.com</span>
                 </motion.div>
             </div>
         </div>
