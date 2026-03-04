@@ -98,7 +98,7 @@ export default function Navbar() {
                             style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                         >
                             <Image
-                                src="/logo.png"
+                                src="/logo-v2.png"
                                 alt="Advay Decor"
                                 width={36}
                                 height={36}
@@ -361,7 +361,7 @@ export default function Navbar() {
                             }}>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <Image
-                                        src="/logo.png"
+                                        src="/logo-v2.png"
                                         alt="Advay Decor"
                                         width={32}
                                         height={32}

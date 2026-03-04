@@ -38,7 +38,7 @@ export default function Footer() {
                     <div>
                         <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', textDecoration: 'none' }}>
                             <Image
-                                src="/logo.png"
+                                src="/logo-v2.png"
                                 alt="Advay Decor"
                                 width={36}
                                 height={36}
