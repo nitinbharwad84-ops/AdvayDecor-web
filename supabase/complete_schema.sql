@@ -398,6 +398,14 @@ CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid(
 DROP POLICY IF EXISTS "Admins manage profiles" ON profiles;
 CREATE POLICY "Admins manage profiles" ON profiles FOR ALL USING (public.is_admin());
 
+-- ── ADMIN USERS ──
+DROP POLICY IF EXISTS "Admins can view their own record" ON admin_users;
+CREATE POLICY "Admins can view their own record" ON admin_users FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Super admins manage all admin users" ON admin_users;
+CREATE POLICY "Super admins manage all admin users" ON admin_users FOR ALL USING (public.is_super_admin());
+
+
 -- ── CATEGORIES ──
 DROP POLICY IF EXISTS "Public read categories" ON categories;
 CREATE POLICY "Public read categories" ON categories FOR SELECT USING (true);
@@ -515,10 +523,16 @@ SET role = 'super_admin', is_protected = TRUE;
 */
 
 -- AUTO-ENABLE ADMIN ACCESS FOR adminnitin@email.com
+-- First, remove any stale admin records for this email
+DELETE FROM public.admin_users WHERE email = 'adminnitin@email.com' AND is_protected = FALSE;
+
+-- Then insert using the LATEST auth user with this email
 INSERT INTO public.admin_users (id, email, full_name, role, is_protected)
 SELECT id, email, 'Super Admin', 'super_admin', TRUE
 FROM auth.users
 WHERE email = 'adminnitin@email.com'
+ORDER BY created_at DESC
+LIMIT 1
 ON CONFLICT (id) DO NOTHING;
 
 SELECT '✅ AdvayDecor MASTER SCHEMA applied successfully!' AS status;

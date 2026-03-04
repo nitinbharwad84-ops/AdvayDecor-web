@@ -46,15 +46,17 @@ export default function AdminLoginPage() {
                 return;
             }
 
-            // Step 2: Check if user exists in admin_users table (separate from profiles)
-            const { data: adminUser, error: adminError } = await supabase
-                .from('admin_users')
-                .select('role, email')
-                .eq('id', authData.user.id)
-                .single();
+            // Step 2: Verify admin status via server-side API (bypasses RLS)
+            const verifyRes = await fetch('/api/auth/verify-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: authData.user.id }),
+            });
+            const adminUser = await verifyRes.json();
 
-            if (adminError || !adminUser) {
-                setError('Access denied. This account is not an admin.');
+            if (!verifyRes.ok || !adminUser.role) {
+                console.error('[admin-login] Verification failed:', adminUser);
+                setError(`Access denied. Debug: ${JSON.stringify(adminUser.debug || adminUser)}`);
                 toast.error('Access denied. Not an admin account.');
                 await supabase.auth.signOut();
                 setIsLoading(false);
