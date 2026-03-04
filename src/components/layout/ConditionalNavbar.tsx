@@ -6,7 +6,8 @@ import CartDrawer from '@/components/shop/CartDrawer';
 
 export default function ConditionalNavbar() {
     const pathname = usePathname();
-    const isAdminPage = pathname?.startsWith('/admin');
+    const isAuthPage = pathname === '/login' || pathname === '/admin-login';
+    const isAdminPage = pathname?.startsWith('/admin') || isAuthPage;
 
     if (isAdminPage) return null;
 

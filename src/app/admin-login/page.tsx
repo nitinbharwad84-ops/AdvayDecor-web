@@ -131,7 +131,7 @@ export default function AdminLoginPage() {
                         }}
                     >
                         <Image
-                            src="/logo.png"
+                            src="/logo.ico"
                             alt="Advay Decor"
                             width={48}
                             height={48}

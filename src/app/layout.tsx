@@ -22,9 +22,9 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   icons: {
-    icon: "/logo-v2.png",
-    shortcut: "/logo-v2.png",
-    apple: "/logo-v2.png",
+    icon: "/logo.ico",
+    shortcut: "/logo.ico",
+    apple: "/logo.ico",
   },
   openGraph: {
     title: "AdvayDecor — Elevate Your Space with Elegance & Style",

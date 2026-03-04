@@ -2,7 +2,7 @@ const CACHE_NAME = 'advaydecor-cache-v1';
 const ASSETS_TO_CACHE = [
     '/',
     '/manifest.json',
-    '/logo.png',
+    '/logo.ico',
 ];
 
 // Install Event
@@ -57,7 +57,7 @@ self.addEventListener('fetch', (event) => {
             });
 
             // Use cached asset if it's an image or static file, otherwise wait for network
-            const isStaticAsset = event.request.url.match(/\.(png|jpg|jpeg|svg|css|js|woff2|json)$/);
+            const isStaticAsset = event.request.url.match(/\.(png|jpg|jpeg|svg|ico|css|js|woff2|json)$/);
             if (isStaticAsset && cachedResponse) {
                 return cachedResponse;
             }
