@@ -148,7 +148,7 @@ export default function LoginPage() {
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', textDecoration: 'none' }}>
                         <Image
-                            src="/logo.ico"
+                            src="/logo.svg"
                             alt="Advay Decor"
                             width={48}
                             height={48}

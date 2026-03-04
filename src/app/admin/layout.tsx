@@ -112,7 +112,7 @@ export default function AdminLayout({
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>
                                 <Image
-                                    src="/logo.ico"
+                                    src="/logo.svg"
                                     alt="Advay Decor"
                                     width={32}
                                     height={32}
@@ -220,7 +220,7 @@ export default function AdminLayout({
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         }}>
                                             <Image
-                                                src="/logo.ico"
+                                                src="/logo.svg"
                                                 alt="Advay Decor"
                                                 width={32}
                                                 height={32}
@@ -311,7 +311,7 @@ function AdminRedirect() {
         }}>
             <div style={{ position: 'relative', width: '48px', height: '48px', opacity: 0.5 }}>
                 <Image
-                    src="/logo.ico"
+                    src="/logo.svg"
                     alt="Advay Decor"
                     fill
                     style={{ objectFit: 'contain' }}
