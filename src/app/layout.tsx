@@ -1,4 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+
+export const viewport: Viewport = {
+  themeColor: "#00b4d8",
+};
 import "./globals.css";
 import ConditionalNavbar from "@/components/layout/ConditionalNavbar";
 import ConditionalFooter from "@/components/layout/ConditionalFooter";
@@ -12,7 +16,6 @@ export const metadata: Metadata = {
   description: "Discover curated, artisanal home decor. Premium cushions, artistic accents, and stylish solutions to transform your living space. Pan-India delivery.",
   keywords: ["home decor", "cushions", "interior design", "artisanal", "India", "AdvayDecor"],
   manifest: "/manifest.json",
-  themeColor: "#00b4d8",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

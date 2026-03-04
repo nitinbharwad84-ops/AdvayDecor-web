@@ -149,6 +149,7 @@ export default function LoginPage() {
                     <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', textDecoration: 'none' }}>
                         <Image
                             src="/logo.svg"
+                            unoptimized
                             alt="Advay Decor"
                             width={48}
                             height={48}
