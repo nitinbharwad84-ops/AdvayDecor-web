@@ -23,7 +23,7 @@ const footerLinks = {
 };
 
 const socialLinks = [
-    { icon: Instagram, href: '#', label: 'Instagram' },
+    { icon: Instagram, href: 'https://www.instagram.com/advaydecor_official', label: 'Instagram' },
     { icon: Facebook, href: '#', label: 'Facebook' },
     { icon: Twitter, href: '#', label: 'Twitter' },
 ];
