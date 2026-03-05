@@ -1,21 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, User, LogIn, UserPlus, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, User, LogIn, UserPlus, ShieldCheck, ChevronLeft, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase';
 import { useUserAuthStore } from '@/lib/auth-store';
 
 type Mode = 'login' | 'signup';
 
+const RedirectHandler = ({ onComplete }: { onComplete: (redirectUrl: string | null) => void }) => {
+    const searchParams = useSearchParams();
+    const redirect = searchParams.get('redirect');
+
+    useEffect(() => {
+        onComplete(redirect);
+    }, [redirect, onComplete]);
+
+    return null;
+};
+
 export default function LoginPage() {
     const router = useRouter();
     const { setUser } = useUserAuthStore();
     const [mode, setMode] = useState<Mode>('login');
+    const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
@@ -80,7 +92,7 @@ export default function LoginPage() {
                             full_name: fullName,
                         });
                         toast.success('Account verified! Welcome to AdvayDecor.');
-                        router.push('/');
+                        router.push(redirectUrl || '/');
                     }
                 }
             } else {
@@ -102,7 +114,7 @@ export default function LoginPage() {
                         full_name: data.user.user_metadata?.full_name || '',
                     });
                     toast.success('Welcome back!');
-                    router.push('/');
+                    router.push(redirectUrl || '/');
                 }
             }
         } catch (err) {
@@ -138,6 +150,9 @@ export default function LoginPage() {
             justifyContent: 'center',
             padding: '2rem 1rem',
         }}>
+            <Suspense fallback={null}>
+                <RedirectHandler onComplete={setRedirectUrl} />
+            </Suspense>
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}

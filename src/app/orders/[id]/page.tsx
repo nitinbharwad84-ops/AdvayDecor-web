@@ -72,7 +72,8 @@ export default function OrderDetailPage() {
 
     useEffect(() => {
         if (!isAuthenticated) {
-            router.push('/login');
+            const currentPath = window.location.pathname + window.location.search;
+            router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
             return;
         }
 
