@@ -60,7 +60,7 @@ export default function FeaturedCollection() {
                 </div>
 
                 {/* Product Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: '1.25rem' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: '1.25rem' }}>
                     {featured.map((product, index) => {
                         const mainImage = product.images?.[0]?.image_url || 'https://images.unsplash.com/photo-1629949009765-40fc74c9ec21?w=600&q=80';
                         return (

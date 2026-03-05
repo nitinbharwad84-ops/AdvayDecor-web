@@ -113,26 +113,18 @@ export default function ShopPage() {
             <section style={{ padding: '3rem 0 4rem' }}>
                 <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem' }}>
                     {/* Toolbar */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginBottom: '2rem',
-                        paddingBottom: '1.5rem',
-                        borderBottom: '1px solid #f0ece4',
-                        flexWrap: 'wrap',
-                        gap: '1rem',
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: '300px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#64648b' }}>
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 pb-6 border-b border-[#f0ece4]">
+                        <div className="flex items-center gap-3 w-full lg:w-auto overflow-hidden">
+                            <div className="flex items-center gap-2 text-sm text-[#64648b] shrink-0">
                                 <SlidersHorizontal size={16} />
                                 <span>Filter:</span>
                             </div>
-                            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem', scrollbarWidth: 'none' }}>
+                            <div className="flex gap-2 overflow-x-auto pb-1 w-full" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
                                 {categories.map((cat) => (
                                     <button
                                         key={cat}
                                         onClick={() => setSelectedCategory(cat)}
+                                        className="shrink-0"
                                         style={{
                                             padding: '0.5rem 1.25rem',
                                             borderRadius: '9999px',
@@ -153,19 +145,9 @@ export default function ShopPage() {
                         </div>
 
                         {/* Search Bar */}
-                        <div style={{ position: 'relative', flex: 1, maxWidth: '400px', minWidth: '240px' }}>
-                            <div style={{
-                                position: 'relative',
-                                display: 'flex',
-                                alignItems: 'center',
-                                background: '#fff',
-                                borderRadius: '1rem',
-                                border: '1px solid #f0ece4',
-                                padding: '0 1rem',
-                                transition: 'all 0.3s ease',
-                                boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
-                            }}>
-                                <Search size={18} style={{ color: '#9e9eb8', marginRight: '0.75rem' }} />
+                        <div className="relative w-full lg:flex-1 lg:max-w-[400px]">
+                            <div className="relative flex items-center bg-white rounded-2xl border border-[#f0ece4] px-4 transition-all duration-300 shadow-sm">
+                                <Search size={18} className="text-[#9e9eb8] shrink-0 mr-3" />
                                 <input
                                     ref={searchInputRef}
                                     type="text"
@@ -211,7 +193,7 @@ export default function ShopPage() {
                             </div>
                         </div>
 
-                        <div className="hidden md:flex" style={{ alignItems: 'center', gap: '1.5rem' }}>
+                        <div className="flex flex-wrap items-center justify-between gap-4 w-full md:w-auto md:justify-end">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                 <span style={{ fontSize: '0.85rem', color: '#64648b', fontWeight: 500 }}>Sort By:</span>
                                 <div style={{ position: 'relative' }}>

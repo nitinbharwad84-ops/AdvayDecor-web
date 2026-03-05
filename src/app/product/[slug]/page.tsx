@@ -441,16 +441,16 @@ export default function ProductDetailPage() {
                     </div>
 
                     {/* Product Promises (Full Width) */}
-                    <div style={{
-                        marginTop: '4rem',
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(3, 1fr)',
-                        gap: '2rem',
-                        padding: '3rem 2rem',
-                        borderRadius: '1.5rem',
-                        background: 'linear-gradient(135deg, rgba(245,240,232,0.6) 0%, rgba(245,240,232,0.2) 100%)',
-                        border: '1px solid #e8e4dc',
-                    }}>
+                    <div
+                        className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 lg:gap-12"
+                        style={{
+                            marginTop: '4rem',
+                            padding: '3rem 2rem',
+                            borderRadius: '1.5rem',
+                            background: 'linear-gradient(135deg, rgba(245,240,232,0.6) 0%, rgba(245,240,232,0.2) 100%)',
+                            border: '1px solid #e8e4dc',
+                        }}
+                    >
                         {[
                             { icon: Truck, label: 'Free Shipping', sub: 'Above ₹999' },
                             { icon: RotateCcw, label: 'Easy Returns', sub: '5-Day Policy' },

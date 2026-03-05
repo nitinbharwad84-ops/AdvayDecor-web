@@ -947,7 +947,7 @@ export default function ProfilePage() {
                                                 <p style={{ color: '#64648b' }}>Add an address to make checkout easier.</p>
                                             </div>
                                         ) : (
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                                 {addresses.map((addr) => (
                                                     <div key={addr.id} style={{ border: addr.is_default ? '2px solid #00b4d8' : '1px solid #e2e8f0', borderRadius: '1rem', padding: '1.5rem', position: 'relative', background: addr.is_default ? '#f0faff' : '#fff' }}>
                                                         {addr.is_default && (
@@ -1000,7 +1000,7 @@ export default function ProfilePage() {
                                                         </button>
                                                         <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1.5rem' }}>{editingAddress.id ? 'Edit Address' : 'Add New Address'}</h3>
                                                         <form onSubmit={handleSaveAddress} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                 <div>
                                                                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Full Name *</label>
                                                                     <input required type="text" value={editingAddress.full_name || ''} onChange={(e) => setEditingAddress({ ...editingAddress, full_name: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} />
@@ -1014,7 +1014,7 @@ export default function ProfilePage() {
                                                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Street Address *</label>
                                                                 <input required type="text" value={editingAddress.street_address || ''} onChange={(e) => setEditingAddress({ ...editingAddress, street_address: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} placeholder="House/Flat No., Building Name, Street" />
                                                             </div>
-                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                 <div>
                                                                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>City *</label>
                                                                     <input required type="text" value={editingAddress.city || ''} onChange={(e) => setEditingAddress({ ...editingAddress, city: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} />
@@ -1024,7 +1024,7 @@ export default function ProfilePage() {
                                                                     <input required type="text" value={editingAddress.state || ''} onChange={(e) => setEditingAddress({ ...editingAddress, state: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} />
                                                                 </div>
                                                             </div>
-                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                 <div>
                                                                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Postal Code (PIN) *</label>
                                                                     <input required type="text" value={editingAddress.postal_code || ''} onChange={(e) => setEditingAddress({ ...editingAddress, postal_code: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }} />
@@ -1191,7 +1191,7 @@ export default function ProfilePage() {
                                                                         style={{ overflow: 'hidden' }}
                                                                     >
                                                                         <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid #f0ece4' }}>
-                                                                            <div style={{ paddingTop: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-5 pt-5">
                                                                                 <div>
                                                                                     <p style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem' }}>Payment</p>
                                                                                     <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0a0a23' }}>
