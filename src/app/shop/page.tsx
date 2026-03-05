@@ -230,7 +230,7 @@ export default function ShopPage() {
                                 <span style={{ fontSize: '0.8rem', color: '#9e9eb8' }}>
                                     {sortedProducts.length} products
                                 </span>
-                                <div className="hidden md:flex items-center gap-1 bg-white p-1 rounded-xl border border-[#e2e8f0]">
+                                <div className="hidden lg:flex items-center gap-1 bg-white p-1 rounded-xl border border-[#e2e8f0]">
                                     <button
                                         onClick={() => setGridCols(2)}
                                         style={{
