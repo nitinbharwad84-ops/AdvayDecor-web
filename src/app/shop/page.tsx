@@ -113,9 +113,12 @@ export default function ShopPage() {
             <section style={{ padding: '3rem 0 4rem' }}>
                 <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem' }}>
                     {/* Toolbar */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 pb-6 border-b border-[#f0ece4]">
-                        <div className="flex items-center gap-3 w-full lg:w-auto overflow-hidden">
-                            <div className="flex items-center gap-2 text-sm text-[#64648b] shrink-0">
+                    <div
+                        className="flex flex-col xl:flex-row xl:items-center justify-between gap-6"
+                        style={{ marginBottom: '3rem', paddingBottom: '1.5rem', borderBottom: '1px solid #f0ece4' }}
+                    >
+                        <div className="flex items-center gap-3 w-full xl:w-auto overflow-hidden">
+                            <div className="flex items-center gap-2 text-[#64648b] shrink-0" style={{ fontSize: '0.875rem' }}>
                                 <SlidersHorizontal size={16} />
                                 <span>Filter:</span>
                             </div>
@@ -145,9 +148,9 @@ export default function ShopPage() {
                         </div>
 
                         {/* Search Bar */}
-                        <div className="relative w-full lg:flex-1 lg:max-w-[400px]">
-                            <div className="relative flex items-center bg-white rounded-2xl border border-[#f0ece4] px-4 transition-all duration-300 shadow-sm">
-                                <Search size={18} className="text-[#9e9eb8] shrink-0 mr-3" />
+                        <div className="relative w-full xl:flex-1 xl:max-w-md">
+                            <div style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '9999px', border: '1px solid #e2e8f0', padding: '0 1.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                <Search size={16} style={{ color: '#9e9eb8', flexShrink: 0, marginRight: '0.5rem' }} />
                                 <input
                                     ref={searchInputRef}
                                     type="text"
@@ -157,8 +160,8 @@ export default function ShopPage() {
                                     style={{
                                         border: 'none',
                                         background: 'transparent',
-                                        padding: '0.75rem 0',
-                                        fontSize: '0.9rem',
+                                        padding: '0.6rem 0',
+                                        fontSize: '0.875rem',
                                         color: '#0a0a23',
                                         outline: 'none',
                                         width: '100%',
@@ -193,7 +196,7 @@ export default function ShopPage() {
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-4 w-full md:w-auto md:justify-end">
+                        <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto xl:justify-end">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                 <span style={{ fontSize: '0.85rem', color: '#64648b', fontWeight: 500 }}>Sort By:</span>
                                 <div style={{ position: 'relative' }}>
@@ -205,7 +208,7 @@ export default function ShopPage() {
                                             background: '#fff',
                                             border: '1px solid #e2e8f0',
                                             padding: '0.5rem 2.5rem 0.5rem 1rem',
-                                            borderRadius: '0.75rem',
+                                            borderRadius: '9999px',
                                             fontSize: '0.85rem',
                                             color: '#0a0a23',
                                             fontWeight: 600,
@@ -223,37 +226,42 @@ export default function ShopPage() {
                                 </div>
                             </div>
 
-                            <span style={{ fontSize: '0.8rem', color: '#9e9eb8' }}>
-                                {sortedProducts.length} products
-                            </span>
-                            <button
-                                onClick={() => setGridCols(2)}
-                                style={{
-                                    padding: '0.5rem',
-                                    borderRadius: '0.5rem',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    background: gridCols === 2 ? 'rgba(10,10,35,0.1)' : 'transparent',
-                                    color: gridCols === 2 ? '#0a0a23' : '#9e9eb8',
-                                }}
-                            >
-                                <LayoutGrid size={18} />
-                            </button>
-                            <button
-                                onClick={() => setGridCols(3)}
-                                style={{
-                                    padding: '0.5rem',
-                                    borderRadius: '0.5rem',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    background: gridCols === 3 ? 'rgba(10,10,35,0.1)' : 'transparent',
-                                    color: gridCols === 3 ? '#0a0a23' : '#9e9eb8',
-                                }}
-                            >
-                                <Grid3X3 size={18} />
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <span style={{ fontSize: '0.8rem', color: '#9e9eb8' }}>
+                                    {sortedProducts.length} products
+                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: '#fff', padding: '0.25rem', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
+                                    <button
+                                        onClick={() => setGridCols(2)}
+                                        style={{
+                                            padding: '0.4rem',
+                                            borderRadius: '0.5rem',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            background: gridCols === 2 ? '#f5f0e8' : 'transparent',
+                                            color: gridCols === 2 ? '#0a0a23' : '#9e9eb8',
+                                        }}
+                                    >
+                                        <LayoutGrid size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => setGridCols(3)}
+                                        className="hidden md:block" // 3 cols only on medium upwards
+                                        style={{
+                                            padding: '0.4rem',
+                                            borderRadius: '0.5rem',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            background: gridCols === 3 ? '#f5f0e8' : 'transparent',
+                                            color: gridCols === 3 ? '#0a0a23' : '#9e9eb8',
+                                        }}
+                                    >
+                                        <Grid3X3 size={16} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
