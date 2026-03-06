@@ -49,6 +49,13 @@ interface OrderDetail {
     created_at: string;
     items: OrderItem[];
     profile: { full_name: string | null; email: string; phone: string | null } | null;
+    // Shiprocket fields
+    shiprocket_order_id?: string;
+    shiprocket_shipment_id?: string;
+    tracking_id?: string;
+    courier_name?: string;
+    shipping_label_url?: string;
+    shipping_status?: string;
 }
 
 const statusConfig: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
@@ -69,6 +76,8 @@ export default function OrderDetailPage() {
     const [order, setOrder] = useState<OrderDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [trackingData, setTrackingData] = useState<any>(null);
+    const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -85,10 +94,49 @@ export default function OrderDetailPage() {
             .then(data => {
                 if (data.error) throw new Error(data.error);
                 setOrder(data);
+                // If it has tracking, fetch live status
+                if (data.id && data.tracking_id) {
+                    fetch(`/api/shiprocket/track?order_id=${data.id}`)
+                        .then(r => r.json())
+                        .then(track => {
+                            if (track.live && track.tracking_data) {
+                                setTrackingData(track.tracking_data);
+                            }
+                        })
+                        .catch(e => console.error('Tracking fetch error:', e));
+                }
             })
             .catch(err => setError(err.message))
             .finally(() => setLoading(false));
     }, [orderId, isAuthenticated, router]);
+
+    const handleAction = async (action: 'cancel' | 'return') => {
+        if (!order) return;
+        if (!confirm(`Are you sure you want to ${action} this order?`)) return;
+
+        setLoadingAction(action);
+        try {
+            // For now, we update order status. In a real app, this might create a request or call Shiprocket.
+            const newStatus = action === 'cancel' ? 'Cancelled' : 'Returned';
+            const res = await fetch(`/api/orders/${order.id}`, { // Note: need a way to update own order status if allowed, or call specific endpoint
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus }),
+            });
+
+            if (res.ok) {
+                setOrder({ ...order, status: newStatus });
+                // If we cancelled and it was synced to shiprocket, the admin will handle the SR cancellation
+            } else {
+                const d = await res.json();
+                alert(d.error || `Failed to ${action}`);
+            }
+        } catch (e) {
+            alert(`Error trying to ${action} order`);
+        } finally {
+            setLoadingAction(null);
+        }
+    };
 
     if (loading) {
         return (
@@ -267,6 +315,61 @@ export default function OrderDetailPage() {
                                 </p>
                             </div>
                         </motion.div>
+
+                        {/* Shiprocket Tracking UI */}
+                        {order.tracking_id && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.25 }}
+                                style={sectionStyle}
+                            >
+                                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Truck size={18} style={{ color: '#00b4d8' }} /> Shipping & Tracking
+                                </h2>
+                                <div style={{ background: 'rgba(0,180,216,0.05)', padding: '1rem', borderRadius: '1rem', marginBottom: '1.5rem', border: '1px solid rgba(0,180,216,0.1)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
+                                        <div>
+                                            <p style={labelStyle}>Courier</p>
+                                            <p style={valueStyle}>{order.courier_name || 'Processing'}</p>
+                                        </div>
+                                        <div>
+                                            <p style={labelStyle}>AWB Number / ID</p>
+                                            <p style={{ ...valueStyle, fontFamily: 'monospace' }}>{order.tracking_id}</p>
+                                        </div>
+                                    </div>
+                                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(0,180,216,0.1)' }}>
+                                        <p style={labelStyle}>Last Status</p>
+                                        <p style={{ ...valueStyle, color: '#00b4d8' }}>{order.shipping_status || order.status}</p>
+                                    </div>
+                                </div>
+
+                                {/* Live Tracking Timeline if available */}
+                                {trackingData && trackingData.shipment_track_activities && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        <p style={{ ...labelStyle, marginBottom: '0.75rem' }}>Live Updates</p>
+                                        {trackingData.shipment_track_activities.map((activity: any, idx: number) => (
+                                            <div key={idx} style={{ display: 'flex', gap: '1rem', position: 'relative' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                    <div style={{
+                                                        width: '12px', height: '12px', borderRadius: '50%',
+                                                        background: idx === 0 ? '#00b4d8' : '#e2e8f0',
+                                                        zIndex: 2, marginTop: '4px'
+                                                    }} />
+                                                    {idx !== trackingData.shipment_track_activities.length - 1 && (
+                                                        <div style={{ width: '2px', flex: 1, background: '#f1f5f9', position: 'absolute', top: '16px', bottom: '-4px' }} />
+                                                    )}
+                                                </div>
+                                                <div style={{ paddingBottom: idx === trackingData.shipment_track_activities.length - 1 ? '0' : '1rem' }}>
+                                                    <p style={{ fontSize: '0.85rem', fontWeight: 700, color: idx === 0 ? '#0a0a23' : '#64648b' }}>{activity.activity}</p>
+                                                    <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{activity.location} • {new Date(activity.date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
                     </div>
 
                     {/* Right Column (1/3) */}
@@ -347,6 +450,40 @@ export default function OrderDetailPage() {
                             transition={{ delay: 0.3 }}
                             style={{ ...sectionStyle, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
                         >
+                            {/* Conditional Return Button */}
+                            {order.status === 'Delivered' && (
+                                <button
+                                    onClick={() => handleAction('return')}
+                                    disabled={loadingAction !== null}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        padding: '0.875rem', background: '#fff', border: '1px solid #e8e4dc',
+                                        color: '#b91c1c', borderRadius: '0.75rem', fontWeight: 600,
+                                        fontSize: '0.9rem', cursor: 'pointer',
+                                    }}
+                                >
+                                    {loadingAction === 'return' ? <Loader2 className="animate-spin" size={18} /> : <RotateCcw size={18} />}
+                                    Return Order
+                                </button>
+                            )}
+
+                            {/* Conditional Cancel Button */}
+                            {(order.status === 'Pending' || (order.status === 'Processing' && !order.tracking_id)) && (
+                                <button
+                                    onClick={() => handleAction('cancel')}
+                                    disabled={loadingAction !== null}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        padding: '0.875rem', background: '#fff', border: '1px solid #e8e4dc',
+                                        color: '#ef4444', borderRadius: '0.75rem', fontWeight: 600,
+                                        fontSize: '0.9rem', cursor: 'pointer',
+                                    }}
+                                >
+                                    {loadingAction === 'cancel' ? <Loader2 className="animate-spin" size={18} /> : <AlertCircle size={18} />}
+                                    Cancel Order
+                                </button>
+                            )}
+
                             <Link href="/shop" style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                                 padding: '0.875rem', background: 'linear-gradient(135deg, #00b4d8, #0096b7)',

@@ -11,6 +11,7 @@ import {
 import toast from 'react-hot-toast';
 import ImageGallery from '@/components/shop/ImageGallery';
 import VariantSelector from '@/components/shop/VariantSelector';
+import TechnicalDetails from '@/components/shop/TechnicalDetails';
 import PincodeChecker from '@/components/shop/PincodeChecker';
 import StockIndicator from '@/components/shop/StockIndicator';
 import ProductCard from '@/components/shop/ProductCard';
@@ -384,6 +385,11 @@ export default function ProductDetailPage() {
                                 </div>
                             )}
 
+                            {/* Technical Details (Weight, Dimensions etc.) */}
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <TechnicalDetails product={product} />
+                            </div>
+
                             {/* Add to Cart */}
                             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
                                 <motion.button
@@ -517,8 +523,8 @@ export default function ProductDetailPage() {
                                     <form onSubmit={handleReviewSubmit}>
                                         <div style={{ marginBottom: '1.5rem' }}>
                                             <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 500, color: '#475569', marginBottom: '0.5rem' }}>Rate this product *</label>
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                {[1, 2, 3, 4, 5].map((star) => (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                    {[1, 2, 3, 4, 5].map((star) => (
                                                     <button
                                                         key={star}
                                                         type="button"

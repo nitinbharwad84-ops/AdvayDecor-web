@@ -23,7 +23,7 @@ export default function VariantSelector({ variants, selectedVariant, onSelect }:
                 )}
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                {variants.map((variant) => {
+                {variants.filter(v => v.is_active !== false).map((variant) => {
                     const isSelected = selectedVariant?.id === variant.id;
                     const isOutOfStock = variant.stock_quantity <= 0;
 

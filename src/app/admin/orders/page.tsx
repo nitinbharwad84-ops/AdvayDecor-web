@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Fragment } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Eye, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, Eye, ChevronDown, Loader2, Package, Truck, Printer, Zap, XCircle, Navigation } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -15,6 +15,15 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 };
 
 const statusOptions = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+
+const actionButtonStyle = (color: string) => ({
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+    padding: '0.5rem', borderRadius: '0.5rem', border: `1px solid ${color}33`,
+    background: '#fff', color: color, fontSize: '0.75rem', fontWeight: 600,
+    cursor: 'pointer', transition: 'all 0.2s',
+});
+
+const sectionStyle = {};
 
 interface OrderData {
     id: string;
@@ -38,6 +47,12 @@ interface OrderData {
     discount_amount: number;
     created_at: string;
     items: { id: string; product_title: string; variant_name: string | null; quantity: number; unit_price: number; total_price: number }[];
+    // Shiprocket fields
+    shiprocket_order_id?: string;
+    shiprocket_shipment_id?: string;
+    tracking_id?: string;
+    shipping_status?: string;
+    shipping_label_url?: string;
 }
 
 export default function AdminOrdersPage() {
@@ -46,6 +61,7 @@ export default function AdminOrdersPage() {
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [orders, setOrders] = useState<OrderData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [processingAction, setProcessingAction] = useState<string | null>(null);
 
     useEffect(() => {
         fetch('/api/admin/orders')
@@ -73,6 +89,35 @@ export default function AdminOrdersPage() {
             }
         } catch {
             toast.error('Failed to update order status');
+        }
+    };
+
+    const handleShiprocketAction = async (orderId: string, action: string) => {
+        setProcessingAction(`${orderId}-${action}`);
+        try {
+            const res = await fetch('/api/shiprocket/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId, action }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(data.message || `Action ${action} successful`);
+                // Refresh order data
+                const updatedRes = await fetch('/api/admin/orders');
+                const updatedData = await updatedRes.json();
+                if (Array.isArray(updatedData)) setOrders(updatedData);
+
+                if (action === 'label' && data.label_url) {
+                    window.open(data.label_url, '_blank');
+                }
+            } else {
+                toast.error(data.error || `Failed to ${action}`);
+            }
+        } catch {
+            toast.error('Error connecting to Shiprocket API');
+        } finally {
+            setProcessingAction(null);
         }
     };
 
@@ -237,6 +282,80 @@ export default function AdminOrdersPage() {
                                                                 <option key={s} value={s}>{s}</option>
                                                             ))}
                                                         </select>
+                                                    </div>
+
+                                                    {/* Shiprocket Actions */}
+                                                    <div>
+                                                        <h4 style={{ fontSize: '0.7rem', fontWeight: 600, color: '#9e9eb8', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Shiprocket Actions</h4>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                                            {!order.shiprocket_order_id ? (
+                                                                <button
+                                                                    onClick={() => handleShiprocketAction(order.id, 'sync')}
+                                                                    disabled={processingAction !== null}
+                                                                    style={actionButtonStyle('#7c3aed')}
+                                                                >
+                                                                    {processingAction === `${order.id}-sync` ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                                                                    Sync Order
+                                                                </button>
+                                                            ) : (
+                                                                <>
+                                                                    {!order.tracking_id && (
+                                                                        <button
+                                                                            onClick={() => handleShiprocketAction(order.id, 'awb')}
+                                                                            disabled={processingAction !== null}
+                                                                            style={actionButtonStyle('#00b4d8')}
+                                                                        >
+                                                                            {processingAction === `${order.id}-awb` ? <Loader2 size={14} className="animate-spin" /> : <Package size={14} />}
+                                                                            Gen AWB
+                                                                        </button>
+                                                                    )}
+                                                                    {order.tracking_id && (
+                                                                        <button
+                                                                            onClick={() => handleShiprocketAction(order.id, 'label')}
+                                                                            disabled={processingAction !== null}
+                                                                            style={actionButtonStyle('#10b981')}
+                                                                        >
+                                                                            {processingAction === `${order.id}-label` ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
+                                                                            Print Label
+                                                                        </button>
+                                                                    )}
+                                                                    {order.tracking_id && (
+                                                                        <button
+                                                                            onClick={() => handleShiprocketAction(order.id, 'pickup')}
+                                                                            disabled={processingAction !== null}
+                                                                            style={actionButtonStyle('#f59e0b')}
+                                                                        >
+                                                                            {processingAction === `${order.id}-pickup` ? <Loader2 size={14} className="animate-spin" /> : <Truck size={14} />}
+                                                                            Pickup
+                                                                        </button>
+                                                                    )}
+                                                                    {order.tracking_id && (
+                                                                        <button
+                                                                            onClick={() => handleShiprocketAction(order.id, 'track')}
+                                                                            disabled={processingAction !== null}
+                                                                            style={actionButtonStyle('#3b82f6')}
+                                                                        >
+                                                                            {processingAction === `${order.id}-track` ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+                                                                            Track
+                                                                        </button>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => handleShiprocketAction(order.id, 'cancel')}
+                                                                        disabled={processingAction !== null}
+                                                                        style={actionButtonStyle('#ef4444')}
+                                                                    >
+                                                                        {processingAction === `${order.id}-cancel` ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
+                                                                        Cancel SR
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        {order.tracking_id && (
+                                                            <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+                                                                <p style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>ID: {order.tracking_id}</p>
+                                                                <p style={{ fontSize: '0.7rem', color: '#00b4d8', fontWeight: 700 }}>Status: {order.shipping_status || 'Synced'}</p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>

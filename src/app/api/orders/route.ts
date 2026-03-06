@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/mail';
 import { formatCurrency } from '@/lib/utils';
+import { createShiprocketOrder } from '@/lib/shiprocket';
 
 // POST: Place a new order (guest or authenticated)
 export async function POST(request: Request) {
@@ -294,6 +295,64 @@ export async function POST(request: Request) {
                 }
             } catch (mailErr) {
                 console.error('Order Confirmation Email Error:', mailErr);
+            }
+
+            // --- Auto-Sync to Shiprocket for COD orders ---
+            try {
+                const { data: settingsData } = await admin
+                    .from('settings')
+                    .select('settings')
+                    .eq('key', 'shiprocket_settings')
+                    .single();
+                
+                const srSettings = settingsData?.settings || {};
+                
+                if (srSettings.enabled && srSettings.autoShipment) {
+                    // We call the same logic as admin but from اینجا
+                    // Since it's a bit complex, we can just fetch the order again with items to be safe
+                    const { data: fullOrder } = await admin
+                        .from('orders')
+                        .select('*, order_items(*)')
+                        .eq('id', order.id)
+                        .single();
+
+                    if (fullOrder) {
+                        // Minimal payload for SR
+                        const srPayload: any = {
+                            order_id: fullOrder.id,
+                            order_date: new Date(fullOrder.created_at).toISOString().replace('T', ' ').substring(0, 16),
+                            pickup_location: srSettings.pickupLocation || 'Primary',
+                            billing_customer_name: fullOrder.shipping_address.full_name,
+                            billing_address: fullOrder.shipping_address.address_line1,
+                            billing_city: fullOrder.shipping_address.city,
+                            billing_pincode: fullOrder.shipping_address.pincode,
+                            billing_state: fullOrder.shipping_address.state,
+                            billing_country: 'India',
+                            billing_email: user?.email || guest_info?.email || 'customer@example.com',
+                            billing_phone: fullOrder.shipping_address.phone,
+                            shipping_is_billing: true,
+                            order_items: fullOrder.order_items.map((it: any) => ({
+                                name: it.product_title,
+                                sku: it.variant_id || it.product_id,
+                                units: it.quantity,
+                                selling_price: it.unit_price,
+                            })),
+                            payment_method: 'COD',
+                            sub_total: fullOrder.total_amount,
+                            weight: 0.5, // Default weight if not found
+                        };
+                        
+                        const srRes = await createShiprocketOrder(srPayload);
+                        if (srRes.success) {
+                            await admin.from('orders').update({
+                                shiprocket_order_id: String(srRes.order_id),
+                                shiprocket_shipment_id: String(srRes.shipment_id),
+                            }).eq('id', fullOrder.id);
+                        }
+                    }
+                }
+            } catch (srErr) {
+                console.warn('Shiprocket auto-sync failed (silent):', srErr);
             }
         } // end: !isOnlinePayment email guard
 

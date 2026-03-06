@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/mail';
 import { formatCurrency } from '@/lib/utils';
+import { createShiprocketOrder } from '@/lib/shiprocket';
 
 /**
  * Confirm a Razorpay payment — called by the client OR the webhook.
@@ -178,6 +179,56 @@ export async function POST(request: Request) {
             }
         } catch (mailErr) {
             console.error('Payment confirmation email error:', mailErr);
+        }
+
+        // ========================================================
+        // AUTO-SYNC TO SHIPROCKET (Prepaid)
+        // ========================================================
+        try {
+            const { data: settingsData } = await admin
+                .from('settings')
+                .select('settings')
+                .eq('key', 'shiprocket_settings')
+                .single();
+            
+            const srSettings = settingsData?.settings || {};
+            
+            if (srSettings.enabled && srSettings.autoShipment) {
+                // Minimal payload for SR
+                const srPayload: any = {
+                    order_id: order.id,
+                    order_date: new Date(order.created_at).toISOString().replace('T', ' ').substring(0, 16),
+                    pickup_location: srSettings.pickupLocation || 'Primary',
+                    billing_customer_name: order.shipping_address.full_name,
+                    billing_address: order.shipping_address.address_line1,
+                    billing_city: order.shipping_address.city,
+                    billing_pincode: order.shipping_address.pincode,
+                    billing_state: order.shipping_address.state,
+                    billing_country: 'India',
+                    billing_email: order.guest_info?.email || 'customer@example.com',
+                    billing_phone: order.shipping_address.phone,
+                    shipping_is_billing: true,
+                    order_items: (orderItems || []).map((it: any) => ({
+                        name: it.product_title,
+                        sku: it.variant_id || it.product_id,
+                        units: it.quantity,
+                        selling_price: it.unit_price,
+                    })),
+                    payment_method: 'Prepaid',
+                    sub_total: order.total_amount,
+                    weight: 0.5,
+                };
+                
+                const srRes = await createShiprocketOrder(srPayload);
+                if (srRes.success) {
+                    await admin.from('orders').update({
+                        shiprocket_order_id: String(srRes.order_id),
+                        shiprocket_shipment_id: String(srRes.shipment_id),
+                    }).eq('id', order.id);
+                }
+            }
+        } catch (srErr) {
+            console.warn('Shiprocket auto-sync failed (silent):', srErr);
         }
 
         return NextResponse.json({
