@@ -50,12 +50,12 @@ export async function POST(request: Request) {
         if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
         const body = await request.json();
-        const { title, slug, description, base_price, category, has_variants, is_active, variants, images, weight, length, width, height, hsn_code, shipping_info } = body;
+        const { title, slug, description, base_price, category, has_variants, is_active, variants, images } = body;
 
         // Insert product
         const { data: product, error: productError } = await admin
             .from('products')
-            .insert({ title, slug, description, base_price, category, has_variants, is_active, weight: weight ?? 0.5, length: length ?? 20, width: width ?? 20, height: height ?? 10, hsn_code: hsn_code ?? '', shipping_info: shipping_info ?? '' })
+            .insert({ title, slug, description, base_price, category, has_variants, is_active })
             .select()
             .single();
 
@@ -69,7 +69,6 @@ export async function POST(request: Request) {
                 sku: v.sku,
                 price: v.price,
                 stock_quantity: v.stock_quantity || 0,
-                is_active: v.is_active !== false,
             }));
             await admin.from('product_variants').insert(variantRows);
         }
@@ -103,14 +102,14 @@ export async function PUT(request: Request) {
         if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
         const body = await request.json();
-        const { id, title, slug, description, base_price, category, has_variants, is_active, variants, images, weight, length, width, height, hsn_code, shipping_info } = body;
+        const { id, title, slug, description, base_price, category, has_variants, is_active, variants, images } = body;
 
         if (!id) return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
 
         // Update product
         const { error: updateError } = await admin
             .from('products')
-            .update({ title, slug, description, base_price, category, has_variants, is_active, weight: weight ?? 0.5, length: length ?? 20, width: width ?? 20, height: height ?? 10, hsn_code: hsn_code ?? '', shipping_info: shipping_info ?? '' })
+            .update({ title, slug, description, base_price, category, has_variants, is_active })
             .eq('id', id);
 
         if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
@@ -126,7 +125,6 @@ export async function PUT(request: Request) {
                     sku: v.sku,
                     price: v.price,
                     stock_quantity: v.stock_quantity || 0,
-                    is_active: v.is_active !== false,
                 }));
                 await admin.from('product_variants').insert(variantRows);
             }

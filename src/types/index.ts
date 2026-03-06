@@ -18,13 +18,6 @@ export interface Product {
   has_variants: boolean;
   is_active: boolean;
   created_at: string;
-  // Shipping dimensions
-  weight?: number;
-  length?: number;
-  width?: number;
-  height?: number;
-  hsn_code?: string;
-  shipping_info?: string;
   // Joined data
   images?: ProductImage[];
   variants?: ProductVariant[];
@@ -39,8 +32,6 @@ export interface ProductVariant {
   sku: string | null;
   price: number;
   stock_quantity: number;
-  is_active: boolean;
-  weight?: number;
   created_at: string;
   images?: ProductImage[];
 }
@@ -72,13 +63,6 @@ export interface Order {
   payment_id: string | null;
   created_at: string;
   items?: OrderItem[];
-  // Shiprocket tracking
-  shiprocket_order_id?: string;
-  shiprocket_shipment_id?: string;
-  tracking_id?: string;
-  courier_name?: string;
-  shipping_label_url?: string;
-  shipping_status?: string;
 }
 
 export interface OrderItem {

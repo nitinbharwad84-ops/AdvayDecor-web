@@ -29,12 +29,9 @@ export async function GET() {
             const totalRating = approvedReviews.reduce((acc: number, r: any) => acc + r.rating, 0);
             const avgRating = approvedReviews.length > 0 ? totalRating / approvedReviews.length : 0;
 
-            // Filter out inactive variants so customers only see active ones
-            const activeVariants = (p.product_variants || []).filter((v: any) => v.is_active !== false);
-
             return {
                 ...p,
-                variants: activeVariants,
+                variants: p.product_variants || [],
                 images: p.product_images || [],
                 avg_rating: avgRating,
                 review_count: approvedReviews.length

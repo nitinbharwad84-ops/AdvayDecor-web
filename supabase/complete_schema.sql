@@ -62,13 +62,6 @@ CREATE TABLE IF NOT EXISTS public.products (
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
   has_variants BOOLEAN DEFAULT FALSE,
   is_active BOOLEAN DEFAULT TRUE,
-  -- Shiprocket shipping dimensions
-  weight DECIMAL(10,3) DEFAULT 0.5,
-  length DECIMAL(10,2) DEFAULT 20,
-  width DECIMAL(10,2) DEFAULT 20,
-  height DECIMAL(10,2) DEFAULT 10,
-  hsn_code TEXT DEFAULT '',
-  shipping_info TEXT DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -81,8 +74,6 @@ CREATE TABLE IF NOT EXISTS public.product_variants (
   sku TEXT,
   price DECIMAL(10,2) NOT NULL,
   stock_quantity INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT TRUE,
-  weight DECIMAL(10,3),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -118,13 +109,6 @@ CREATE TABLE IF NOT EXISTS public.orders (
   razorpay_payment_id TEXT,
   coupon_code TEXT,
   discount_amount DECIMAL(10,2) DEFAULT 0,
-  -- Shiprocket tracking
-  shiprocket_order_id TEXT,
-  shiprocket_shipment_id TEXT,
-  tracking_id TEXT,
-  courier_name TEXT,
-  shipping_label_url TEXT,
-  shipping_status TEXT DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -502,15 +486,7 @@ ON CONFLICT (name) DO NOTHING;
 INSERT INTO public.site_config (key, value, description) VALUES
   ('global_shipping_fee', '50', 'Global shipping fee in INR'),
   ('cod_enabled', 'true', 'Enable Cash on Delivery'),
-  ('razorpay_enabled', 'true', 'Enable Razorpay Online Payment'),
-  ('shiprocket_enabled', 'false', 'Enable Shiprocket shipping integration'),
-  ('shipping_mode', 'fixed', 'Shipping fee mode: fixed or variable'),
-  ('shiprocket_pickup_location_id', '', 'Shiprocket pickup location ID'),
-  ('courier_priority', 'recommended', 'Courier selection: cheapest, fastest, recommended'),
-  ('shiprocket_pincode_check', 'true', 'Enable pincode serviceability check'),
-  ('shiprocket_live_tracking', 'true', 'Enable live tracking on order details'),
-  ('shiprocket_auto_ship', 'false', 'Auto-create shipment on order confirmation'),
-  ('shipping_fallback_fee', '50', 'Fallback shipping fee if API fails')
+  ('razorpay_enabled', 'true', 'Enable Razorpay Online Payment')
 ON CONFLICT (key) DO NOTHING;
 
 

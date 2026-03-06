@@ -19,9 +19,9 @@ export const sampleProducts: Product[] = [
             { id: 'img4', product_id: '1', variant_id: null, image_url: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80', display_order: 3 },
         ],
         variants: [
-            { id: 'v1', parent_product_id: '1', variant_name: 'Red', sku: 'CUSH-FLR-RED', price: 999, stock_quantity: 12, created_at: new Date().toISOString(), is_active: true },
-            { id: 'v2', parent_product_id: '1', variant_name: 'Blue', sku: 'CUSH-FLR-BLU', price: 1099, stock_quantity: 3, created_at: new Date().toISOString(), is_active: true },
-            { id: 'v3', parent_product_id: '1', variant_name: 'Green', sku: 'CUSH-FLR-GRN', price: 999, stock_quantity: 8, created_at: new Date().toISOString(), is_active: true },
+            { id: 'v1', parent_product_id: '1', variant_name: 'Red', sku: 'CUSH-FLR-RED', price: 999, stock_quantity: 12, created_at: new Date().toISOString() },
+            { id: 'v2', parent_product_id: '1', variant_name: 'Blue', sku: 'CUSH-FLR-BLU', price: 1099, stock_quantity: 3, created_at: new Date().toISOString() },
+            { id: 'v3', parent_product_id: '1', variant_name: 'Green', sku: 'CUSH-FLR-GRN', price: 999, stock_quantity: 8, created_at: new Date().toISOString() },
         ],
     },
     {
@@ -39,8 +39,8 @@ export const sampleProducts: Product[] = [
             { id: 'img6', product_id: '2', variant_id: null, image_url: 'https://images.unsplash.com/photo-1629949009765-40fc74c9ec21?w=800&q=80', display_order: 1 },
         ],
         variants: [
-            { id: 'v4', parent_product_id: '2', variant_name: 'Natural', sku: 'CUSH-BOH-NAT', price: 799, stock_quantity: 15, created_at: new Date().toISOString(), is_active: true },
-            { id: 'v5', parent_product_id: '2', variant_name: 'Charcoal', sku: 'CUSH-BOH-CHA', price: 849, stock_quantity: 7, created_at: new Date().toISOString(), is_active: true },
+            { id: 'v4', parent_product_id: '2', variant_name: 'Natural', sku: 'CUSH-BOH-NAT', price: 799, stock_quantity: 15, created_at: new Date().toISOString() },
+            { id: 'v5', parent_product_id: '2', variant_name: 'Charcoal', sku: 'CUSH-BOH-CHA', price: 849, stock_quantity: 7, created_at: new Date().toISOString() },
         ],
     },
     {
@@ -74,9 +74,9 @@ export const sampleProducts: Product[] = [
             { id: 'img10', product_id: '4', variant_id: null, image_url: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=800&q=80', display_order: 1 },
         ],
         variants: [
-            { id: 'v6', parent_product_id: '4', variant_name: 'Emerald', sku: 'CUSH-VLV-EMR', price: 1499, stock_quantity: 2, created_at: new Date().toISOString(), is_active: true },
-            { id: 'v7', parent_product_id: '4', variant_name: 'Ruby', sku: 'CUSH-VLV-RBY', price: 1499, stock_quantity: 6, created_at: new Date().toISOString(), is_active: true },
-            { id: 'v8', parent_product_id: '4', variant_name: 'Sapphire', sku: 'CUSH-VLV-SAP', price: 1599, stock_quantity: 0, created_at: new Date().toISOString(), is_active: true },
+            { id: 'v6', parent_product_id: '4', variant_name: 'Emerald', sku: 'CUSH-VLV-EMR', price: 1499, stock_quantity: 2, created_at: new Date().toISOString() },
+            { id: 'v7', parent_product_id: '4', variant_name: 'Ruby', sku: 'CUSH-VLV-RBY', price: 1499, stock_quantity: 6, created_at: new Date().toISOString() },
+            { id: 'v8', parent_product_id: '4', variant_name: 'Sapphire', sku: 'CUSH-VLV-SAP', price: 1599, stock_quantity: 0, created_at: new Date().toISOString() },
         ],
     },
     {
@@ -93,8 +93,8 @@ export const sampleProducts: Product[] = [
             { id: 'img11', product_id: '5', variant_id: null, image_url: 'https://images.unsplash.com/photo-1629949009765-40fc74c9ec21?w=800&q=80', display_order: 0 },
         ],
         variants: [
-            { id: 'v9', parent_product_id: '5', variant_name: 'Oat', sku: 'CUSH-LIN-OAT', price: 699, stock_quantity: 20, created_at: new Date().toISOString(), is_active: true },
-            { id: 'v10', parent_product_id: '5', variant_name: 'Sage', sku: 'CUSH-LIN-SAG', price: 699, stock_quantity: 18, created_at: new Date().toISOString(), is_active: true },
+            { id: 'v9', parent_product_id: '5', variant_name: 'Oat', sku: 'CUSH-LIN-OAT', price: 699, stock_quantity: 20, created_at: new Date().toISOString() },
+            { id: 'v10', parent_product_id: '5', variant_name: 'Sage', sku: 'CUSH-LIN-SAG', price: 699, stock_quantity: 18, created_at: new Date().toISOString() },
         ],
     },
     {

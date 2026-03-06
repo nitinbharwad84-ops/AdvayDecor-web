@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Plus, Trash2, Upload, ImageIcon, Loader2, X, Package, ToggleLeft, ToggleRight } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Upload, ImageIcon, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import type { Product } from '@/types';
@@ -35,11 +35,9 @@ export default function AdminProductEditPage() {
     const [form, setForm] = useState({
         title: '', slug: '', description: '', base_price: '',
         category: '', has_variants: false, is_active: true,
-        weight: '0.5', length: '20', width: '20', height: '10',
-        hsn_code: '', shipping_info: '',
     });
 
-    const [variants, setVariants] = useState<{ id: string; variant_name: string; sku: string; price: string; stock_quantity: string; is_active: boolean }[]>([]);
+    const [variants, setVariants] = useState<{ id: string; variant_name: string; sku: string; price: string; stock_quantity: string }[]>([]);
     const [existingImages, setExistingImages] = useState<{ id: string; image_url: string }[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -79,12 +77,6 @@ export default function AdminProductEditPage() {
                         category: product.category,
                         has_variants: product.has_variants,
                         is_active: product.is_active,
-                        weight: (product.weight ?? 0.5).toString(),
-                        length: (product.length ?? 20).toString(),
-                        width: (product.width ?? 20).toString(),
-                        height: (product.height ?? 10).toString(),
-                        hsn_code: product.hsn_code || '',
-                        shipping_info: product.shipping_info || '',
                     });
                     setVariants(
                         (product.variants || []).map(v => ({
@@ -93,7 +85,6 @@ export default function AdminProductEditPage() {
                             sku: v.sku || '',
                             price: v.price.toString(),
                             stock_quantity: v.stock_quantity.toString(),
-                            is_active: v.is_active !== false,
                         }))
                     );
                     setExistingImages(
@@ -122,19 +113,12 @@ export default function AdminProductEditPage() {
                 category: form.category,
                 has_variants: form.has_variants,
                 is_active: form.is_active,
-                weight: parseFloat(form.weight) || 0.5,
-                length: parseFloat(form.length) || 20,
-                width: parseFloat(form.width) || 20,
-                height: parseFloat(form.height) || 10,
-                hsn_code: form.hsn_code,
-                shipping_info: form.shipping_info,
                 variants: form.has_variants
                     ? variants.map(v => ({
                         variant_name: v.variant_name,
                         sku: v.sku,
                         price: parseFloat(v.price) || 0,
                         stock_quantity: parseInt(v.stock_quantity) || 0,
-                        is_active: v.is_active,
                     }))
                     : [],
                 images: existingImages.map((img) => ({ image_url: img.image_url })),
@@ -179,7 +163,7 @@ export default function AdminProductEditPage() {
     const addVariant = () => {
         setVariants([...variants, {
             id: `v-new-${Date.now()}`, variant_name: '', sku: '',
-            price: form.base_price, stock_quantity: '0', is_active: true,
+            price: form.base_price, stock_quantity: '0',
         }]);
     };
 
@@ -415,45 +399,6 @@ export default function AdminProductEditPage() {
                         </div>
                     </div>
 
-                    {/* Shipping & Dimensions */}
-                    <div style={cardStyle}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: 'linear-gradient(135deg, #3b82f6, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Package size={16} style={{ color: '#fff' }} />
-                            </div>
-                            <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23' }}>Shipping & Dimensions</h2>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div>
-                                <label style={labelStyle}>Weight (kg) *</label>
-                                <input type="number" step="0.01" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} style={inputStyle} placeholder="0.5" />
-                            </div>
-                            <div>
-                                <label style={labelStyle}>HSN Code</label>
-                                <input value={form.hsn_code} onChange={(e) => setForm({ ...form, hsn_code: e.target.value })} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="e.g., 9404" />
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Length (cm)</label>
-                                <input type="number" step="0.1" value={form.length} onChange={(e) => setForm({ ...form, length: e.target.value })} style={inputStyle} placeholder="20" />
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Width (cm)</label>
-                                <input type="number" step="0.1" value={form.width} onChange={(e) => setForm({ ...form, width: e.target.value })} style={inputStyle} placeholder="20" />
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Height (cm)</label>
-                                <input type="number" step="0.1" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} style={inputStyle} placeholder="10" />
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Shipping Info (Display)</label>
-                                <input value={form.shipping_info} onChange={(e) => setForm({ ...form, shipping_info: e.target.value })} style={inputStyle} placeholder="e.g., Ships in 24 hours" />
-                            </div>
-                        </div>
-                        <p style={{ fontSize: '0.75rem', color: '#9e9eb8', marginTop: '0.75rem' }}>
-                            Volumetric weight = L × W × H / 5000. Shiprocket uses the higher of actual vs volumetric weight.
-                        </p>
-                    </div>
-
                     {/* Media */}
                     <div style={cardStyle}>
                         <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23', marginBottom: '1.25rem' }}>Media</h2>
@@ -546,28 +491,13 @@ export default function AdminProductEditPage() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {variants.map((variant, idx) => (
                                     <motion.div key={variant.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                        style={{ padding: '1rem', borderRadius: '0.75rem', background: variant.is_active ? '#fafaf8' : '#f1f1f0', border: `1px solid ${variant.is_active ? '#f0ece4' : '#e5e5e3'}`, opacity: variant.is_active ? 1 : 0.7, transition: 'all 0.2s' }}>
+                                        style={{ padding: '1rem', borderRadius: '0.75rem', background: '#fafaf8', border: '1px solid #f0ece4' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                             <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0a0a23' }}>Variant {idx + 1}</span>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                {/* Active/Inactive Toggle */}
-                                                <button
-                                                    onClick={() => { const u = [...variants]; u[idx].is_active = !u[idx].is_active; setVariants(u); }}
-                                                    title={variant.is_active ? 'Disable variant' : 'Enable variant'}
-                                                    style={{ padding: '0.375rem', borderRadius: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: variant.is_active ? '#10b981' : '#9e9eb8', display: 'flex' }}
-                                                >
-                                                    {variant.is_active ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-                                                </button>
-                                                <button onClick={() => removeVariant(variant.id)} style={{ padding: '0.375rem', borderRadius: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: '#9e9eb8', display: 'flex' }}>
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
+                                            <button onClick={() => removeVariant(variant.id)} style={{ padding: '0.375rem', borderRadius: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: '#9e9eb8', display: 'flex' }}>
+                                                <Trash2 size={14} />
+                                            </button>
                                         </div>
-                                        {!variant.is_active && (
-                                            <div style={{ fontSize: '0.75rem', color: '#ef4444', background: 'rgba(239,68,68,0.06)', padding: '0.25rem 0.5rem', borderRadius: '0.375rem', marginBottom: '0.5rem', fontWeight: 500 }}>
-                                                ⚠ This variant is hidden from customers
-                                            </div>
-                                        )}
                                         <div className="admin-variant-grid">
                                             <input value={variant.variant_name} onChange={(e) => { const u = [...variants]; u[idx].variant_name = e.target.value; setVariants(u); }} placeholder="Name" style={{ ...inputStyle, background: '#fff' }} />
                                             <input value={variant.sku} onChange={(e) => { const u = [...variants]; u[idx].sku = e.target.value; setVariants(u); }} placeholder="SKU" style={{ ...inputStyle, background: '#fff', fontFamily: 'monospace' }} />
