@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-    Save, UserPlus, Shield, Truck, Image as ImageIcon, Store, Loader2, CreditCard, Smartphone, Building2, Wallet, CalendarClock, Upload, X, ChevronRight, Globe
+    Save, UserPlus, Shield, Truck, Image as ImageIcon, Store, Loader2, CreditCard, Smartphone, Building2, Wallet, CalendarClock, Upload, X, ChevronRight, Globe, Package, MapPin, Zap, LocateFixed, Navigation
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -117,6 +117,16 @@ export default function AdminSettingsPage() {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Shiprocket State
+    const [shiprocketEnabled, setShiprocketEnabled] = useState(false);
+    const [shippingMode, setShippingMode] = useState('fixed'); // 'fixed' or 'variable'
+    const [pickupLocationId, setPickupLocationId] = useState('');
+    const [courierPriority, setCourierPriority] = useState('recommended');
+    const [fallbackFee, setFallbackFee] = useState('50');
+    const [pincodeCheck, setPincodeCheck] = useState(true);
+    const [liveTracking, setLiveTracking] = useState(true);
+    const [autoShip, setAutoShip] = useState(false);
+
     // Fetch current settings from Supabase
     useEffect(() => {
         fetch('/api/admin/settings')
@@ -134,6 +144,15 @@ export default function AdminSettingsPage() {
                     if (data.razorpay_netbanking !== undefined) setRazorpayNetbanking(data.razorpay_netbanking === 'true');
                     if (data.razorpay_wallet !== undefined) setRazorpayWallet(data.razorpay_wallet === 'true');
                     if (data.razorpay_emi !== undefined) setRazorpayEmi(data.razorpay_emi === 'true');
+                    // Shiprocket settings
+                    if (data.shiprocket_enabled !== undefined) setShiprocketEnabled(data.shiprocket_enabled === 'true');
+                    if (data.shipping_mode) setShippingMode(data.shipping_mode);
+                    if (data.shiprocket_pickup_location_id) setPickupLocationId(data.shiprocket_pickup_location_id);
+                    if (data.courier_priority) setCourierPriority(data.courier_priority);
+                    if (data.shipping_fallback_fee) setFallbackFee(data.shipping_fallback_fee);
+                    if (data.shiprocket_pincode_check !== undefined) setPincodeCheck(data.shiprocket_pincode_check === 'true');
+                    if (data.shiprocket_live_tracking !== undefined) setLiveTracking(data.shiprocket_live_tracking === 'true');
+                    if (data.shiprocket_auto_ship !== undefined) setAutoShip(data.shiprocket_auto_ship === 'true');
                 }
                 setLoading(false);
             })
@@ -157,6 +176,15 @@ export default function AdminSettingsPage() {
                     razorpay_netbanking: razorpayNetbanking ? 'true' : 'false',
                     razorpay_wallet: razorpayWallet ? 'true' : 'false',
                     razorpay_emi: razorpayEmi ? 'true' : 'false',
+                    // Shiprocket
+                    shiprocket_enabled: shiprocketEnabled ? 'true' : 'false',
+                    shipping_mode: shippingMode,
+                    shiprocket_pickup_location_id: pickupLocationId,
+                    courier_priority: courierPriority,
+                    shipping_fallback_fee: fallbackFee,
+                    shiprocket_pincode_check: pincodeCheck ? 'true' : 'false',
+                    shiprocket_live_tracking: liveTracking ? 'true' : 'false',
+                    shiprocket_auto_ship: autoShip ? 'true' : 'false',
                 }),
             });
 
@@ -317,6 +345,133 @@ export default function AdminSettingsPage() {
                             <input type="number" value={freeShippingThreshold} onChange={(e) => setFreeShippingThreshold(e.target.value)} style={inputStyle} />
                         </div>
                     </div>
+                </motion.div>
+
+                {/* Shiprocket Settings */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} style={cardStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '0.5rem', background: 'linear-gradient(135deg, #7c3aed, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Package size={18} style={{ color: '#fff' }} />
+                            </div>
+                            <div>
+                                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23' }}>Shiprocket Shipping</h2>
+                                <p style={{ fontSize: '0.7rem', color: '#9e9eb8' }}>
+                                    {shiprocketEnabled ? 'Active — rates are calculated via Shiprocket API' : 'Disabled — using fixed shipping fee'}
+                                </p>
+                            </div>
+                        </div>
+                        <ToggleSwitch enabled={shiprocketEnabled} onToggle={() => setShiprocketEnabled(!shiprocketEnabled)} />
+                    </div>
+
+                    {shiprocketEnabled && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingTop: '0.5rem', borderTop: '1px solid #f0ece4' }}
+                        >
+                            {/* Shipping Mode */}
+                            <div>
+                                <label style={labelStyle}>Shipping Fee Mode</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    {(['fixed', 'variable'] as const).map(mode => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setShippingMode(mode)}
+                                            style={{
+                                                flex: 1, padding: '0.625rem 1rem', borderRadius: '0.75rem',
+                                                border: `2px solid ${shippingMode === mode ? '#7c3aed' : '#e8e4dc'}`,
+                                                background: shippingMode === mode ? 'rgba(124,58,237,0.05)' : '#fff',
+                                                color: shippingMode === mode ? '#7c3aed' : '#64648b',
+                                                fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s',
+                                                textTransform: 'capitalize',
+                                            }}
+                                        >
+                                            {mode === 'fixed' ? '₹ Fixed Fee' : '📦 Variable (API)'}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p style={{ fontSize: '0.7rem', color: '#9e9eb8', marginTop: '0.375rem' }}>
+                                    {shippingMode === 'fixed'
+                                        ? 'Use the fixed shipping fee above for all orders.'
+                                        : 'Calculate shipping cost dynamically via Shiprocket based on weight and destination.'}
+                                </p>
+                            </div>
+
+                            {/* Pickup Location */}
+                            <div>
+                                <label style={labelStyle}>Pickup Pincode / Location ID</label>
+                                <input
+                                    value={pickupLocationId}
+                                    onChange={(e) => setPickupLocationId(e.target.value)}
+                                    style={{ ...inputStyle, fontFamily: 'monospace' }}
+                                    placeholder="e.g., 400001 or Primary"
+                                />
+                                <p style={{ fontSize: '0.7rem', color: '#9e9eb8', marginTop: '0.25rem' }}>
+                                    Your warehouse/pickup pincode. Used for rate calculations and serviceability checks.
+                                </p>
+                            </div>
+
+                            {/* Courier Priority + Fallback Fee row */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={labelStyle}>Courier Priority</label>
+                                    <select
+                                        value={courierPriority}
+                                        onChange={(e) => setCourierPriority(e.target.value)}
+                                        style={inputStyle}
+                                    >
+                                        <option value="recommended">Recommended</option>
+                                        <option value="cheapest">Cheapest</option>
+                                        <option value="fastest">Fastest</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Fallback Fee (₹)</label>
+                                    <input
+                                        type="number"
+                                        value={fallbackFee}
+                                        onChange={(e) => setFallbackFee(e.target.value)}
+                                        style={inputStyle}
+                                        placeholder="50"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Feature Toggles */}
+                            <div>
+                                <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#9e9eb8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                                    Feature Toggles
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <PaymentToggleRow
+                                        icon={MapPin}
+                                        iconGradient="linear-gradient(135deg, #06b6d4, #0891b2)"
+                                        label="Pincode Serviceability Check"
+                                        description="Check delivery availability before payment"
+                                        enabled={pincodeCheck}
+                                        onToggle={() => setPincodeCheck(!pincodeCheck)}
+                                    />
+                                    <PaymentToggleRow
+                                        icon={Navigation}
+                                        iconGradient="linear-gradient(135deg, #10b981, #059669)"
+                                        label="Live Tracking"
+                                        description="Show real-time tracking on customer order page"
+                                        enabled={liveTracking}
+                                        onToggle={() => setLiveTracking(!liveTracking)}
+                                    />
+                                    <PaymentToggleRow
+                                        icon={Zap}
+                                        iconGradient="linear-gradient(135deg, #f59e0b, #d97706)"
+                                        label="Auto Create Shipment"
+                                        description="Automatically push order to Shiprocket on confirmation"
+                                        enabled={autoShip}
+                                        onToggle={() => setAutoShip(!autoShip)}
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
                 </motion.div>
 
                 {/* Payment Settings */}
