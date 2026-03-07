@@ -78,6 +78,29 @@ export async function POST(request: Request) {
         }
 
         // ========================================================
+        // CREATE SHIPROCKET ORDER (non-blocking)
+        // ========================================================
+        let shiprocketInfo: { shiprocket_order_id?: string; shipment_id?: string; awb_code?: string } = {};
+        try {
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+            const srRes = await fetch(`${siteUrl}/api/shipping/create-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id }),
+            });
+            const srData = await srRes.json();
+            if (srData.success) {
+                shiprocketInfo = {
+                    shiprocket_order_id: srData.shiprocket_order_id?.toString(),
+                    shipment_id: srData.shipment_id?.toString(),
+                    awb_code: srData.awb_code || undefined,
+                };
+            }
+        } catch (srErr) {
+            console.warn('Shiprocket order creation warning:', srErr);
+        }
+
+        // ========================================================
         // SEND CONFIRMATION EMAIL
         // ========================================================
         try {

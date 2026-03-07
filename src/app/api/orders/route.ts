@@ -199,6 +199,26 @@ export async function POST(request: Request) {
             }
         }
 
+        // ========================================================
+        // CREATE SHIPROCKET ORDER (COD orders — immediate confirmation)
+        // ========================================================
+        if (!isOnlinePayment) {
+            try {
+                const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+                const srRes = await fetch(`${siteUrl}/api/shipping/create-order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: order.id }),
+                });
+                const srData = await srRes.json();
+                if (srData.success) {
+                    console.log(`Shiprocket order created for COD order ${order.id}: SR#${srData.shiprocket_order_id}`);
+                }
+            } catch (srErr) {
+                console.warn('Shiprocket order creation warning (COD):', srErr);
+            }
+        }
+
         // --- Send Order Confirmation Email (only for confirmed orders) ---
         // For 'Awaiting Payment' orders, email is sent when payment is confirmed.
         if (!isOnlinePayment) {

@@ -19,6 +19,8 @@ import {
     Tag,
     Users,
     Star,
+    Truck,
+    RotateCcw,
 } from 'lucide-react';
 import { useAdminAuthStore } from '@/lib/auth-store';
 import { createClient } from '@/lib/supabase';
@@ -29,6 +31,8 @@ const sidebarLinks = [
     { name: 'Categories', href: '/admin/categories', icon: Tag },
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
+    { name: 'Shiprocket', href: '/admin/shiprocket', icon: Truck },
+    { name: 'Returns', href: '/admin/returns', icon: RotateCcw },
     { name: 'Reviews', href: '/admin/reviews', icon: Star },
     { name: 'Messages', href: '/admin/messages', icon: MessageSquare },
     { name: 'FAQ Questions', href: '/admin/faq-questions', icon: HelpCircle },

@@ -18,6 +18,11 @@ export interface Product {
   has_variants: boolean;
   is_active: boolean;
   created_at: string;
+  // Shipping dimensions (for Shiprocket)
+  weight?: number;
+  length?: number;
+  breadth?: number;
+  height?: number;
   // Joined data
   images?: ProductImage[];
   variants?: ProductVariant[];
@@ -63,6 +68,13 @@ export interface Order {
   payment_method: 'COD' | 'Razorpay';
   payment_id: string | null;
   created_at: string;
+  // Shiprocket fields
+  shiprocket_order_id?: string | null;
+  shipment_id?: string | null;
+  awb_code?: string | null;
+  estimated_delivery?: string | null;
+  courier_name?: string | null;
+  // Joined data
   items?: OrderItem[];
 }
 
@@ -95,11 +107,69 @@ export interface ShippingAddress {
   email?: string;
 }
 
-export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
+export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned' | 'Awaiting Payment';
 
 export interface CartItem {
   product: Product;
   variant: ProductVariant | null;
   quantity: number;
   image: string;
+}
+
+// Shiprocket-specific types
+
+export interface Shipment {
+  id: string;
+  order_id: string;
+  shiprocket_order_id: string | null;
+  shipment_id: string | null;
+  courier_name: string | null;
+  awb_code: string | null;
+  status: string;
+  estimated_delivery: string | null;
+  pickup_date: string | null;
+  delivered_date: string | null;
+  shipping_cost: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TrackingUpdate {
+  id: string;
+  shipment_id: string;
+  order_id: string;
+  status: string;
+  activity: string | null;
+  location: string | null;
+  sr_status: string | null;
+  sr_status_label: string | null;
+  event_time: string;
+  created_at: string;
+}
+
+export interface ReturnRequest {
+  id: string;
+  order_id: string;
+  user_id: string | null;
+  reason: string;
+  refund_method: string;
+  refund_details: any;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Completed';
+  admin_notes: string | null;
+  shiprocket_return_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CancellationRequest {
+  id: string;
+  order_id: string;
+  user_id: string | null;
+  reason: string;
+  refund_method: string;
+  refund_details: any;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Refunded';
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string;
 }

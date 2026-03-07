@@ -3,13 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, Package, MapPin, CreditCard, Clock, User, Mail, Phone,
-    Hash, Truck, CheckCircle, AlertCircle, RotateCcw, Loader2, ShoppingBag, Tag
+    Hash, Truck, CheckCircle, AlertCircle, RotateCcw, Loader2, ShoppingBag, Tag,
+    XCircle, X, ChevronDown, ChevronUp, ExternalLink
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useUserAuthStore } from '@/lib/auth-store';
+import toast from 'react-hot-toast';
 
 interface OrderItem {
     id: string;
@@ -46,9 +48,38 @@ interface OrderDetail {
     coupon_code: string | null;
     discount_amount: number;
     razorpay_order_id?: string | null;
+    shiprocket_order_id?: string | null;
+    shipment_id?: string | null;
+    awb_code?: string | null;
+    courier_name?: string | null;
+    estimated_delivery?: string | null;
     created_at: string;
     items: OrderItem[];
     profile: { full_name: string | null; email: string; phone: string | null } | null;
+}
+
+interface TimelineStep {
+    key: string;
+    label: string;
+    completed: boolean;
+    active: boolean;
+    date?: string;
+    location?: string;
+}
+
+interface TrackingData {
+    available: boolean;
+    current_status?: string;
+    etd?: string;
+    track_url?: string;
+    timeline?: TimelineStep[];
+    activities?: {
+        date: string;
+        status: string;
+        activity: string;
+        location: string;
+    }[];
+    message?: string;
 }
 
 const statusConfig: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
@@ -69,6 +100,16 @@ export default function OrderDetailPage() {
     const [order, setOrder] = useState<OrderDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [tracking, setTracking] = useState<TrackingData | null>(null);
+    const [isTrackingLoading, setIsTrackingLoading] = useState(false);
+    const [showAllActivities, setShowAllActivities] = useState(false);
+
+    // Cancel/Return modal state
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showReturnModal, setShowReturnModal] = useState(false);
+    const [actionReason, setActionReason] = useState('');
+    const [refundMethod, setRefundMethod] = useState('original');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -89,6 +130,84 @@ export default function OrderDetailPage() {
             .catch(err => setError(err.message))
             .finally(() => setLoading(false));
     }, [orderId, isAuthenticated, router]);
+
+    // Fetch tracking data
+    useEffect(() => {
+        if (!order) return;
+        if (!order.awb_code && !order.shipment_id) return;
+
+        setIsTrackingLoading(true);
+        const params = order.awb_code
+            ? `awb=${order.awb_code}&order_id=${order.id}`
+            : `order_id=${order.id}`;
+
+        fetch(`/api/shipping/track?${params}`)
+            .then(res => res.json())
+            .then(data => setTracking(data))
+            .catch(() => setTracking({ available: false, message: 'Unable to load tracking' }))
+            .finally(() => setIsTrackingLoading(false));
+    }, [order]);
+
+    const handleCancel = async () => {
+        if (!actionReason.trim()) {
+            toast.error('Please provide a reason for cancellation');
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const res = await fetch('/api/orders/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    reason: actionReason,
+                    refund_method: refundMethod,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                toast.success(data.message || 'Order cancelled successfully');
+                setShowCancelModal(false);
+                setOrder(prev => prev ? { ...prev, status: 'Cancelled' } : null);
+            } else {
+                toast.error(data.error || 'Failed to cancel order');
+            }
+        } catch {
+            toast.error('Something went wrong');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleReturn = async () => {
+        if (!actionReason.trim()) {
+            toast.error('Please provide a reason for return');
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const res = await fetch('/api/orders/return', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    reason: actionReason,
+                    refund_method: refundMethod,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                toast.success(data.message || 'Return request submitted');
+                setShowReturnModal(false);
+            } else {
+                toast.error(data.error || 'Failed to submit return request');
+            }
+        } catch {
+            toast.error('Something went wrong');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -125,6 +244,11 @@ export default function OrderDetailPage() {
     const customerPhone = order.profile?.phone || order.guest_info?.phone || order.shipping_address.phone || '—';
     const subtotal = order.items.reduce((sum, item) => sum + item.total_price, 0);
 
+    // Can this order be cancelled?
+    const canCancel = !['Delivered', 'Cancelled', 'Returned'].includes(order.status);
+    // Can this order be returned?
+    const canReturn = order.status === 'Delivered';
+
     const sectionStyle: React.CSSProperties = {
         background: '#fff', borderRadius: '1.25rem', padding: 'clamp(1.25rem, 3vw, 2rem)',
         border: '1px solid #f0ece4', marginBottom: '1.5rem',
@@ -137,6 +261,13 @@ export default function OrderDetailPage() {
 
     const valueStyle: React.CSSProperties = {
         fontSize: '0.95rem', color: '#0a0a23', fontWeight: 600,
+    };
+
+    const formatTrackingDate = (dateStr: string) => {
+        try {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        } catch { return dateStr; }
     };
 
     return (
@@ -176,6 +307,180 @@ export default function OrderDetailPage() {
                         </div>
                     </div>
                 </motion.div>
+
+                {/* ===== TRACKING TIMELINE ===== */}
+                {(order.awb_code || order.shipment_id || tracking) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.05 }}
+                        style={sectionStyle}
+                    >
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Truck size={18} style={{ color: '#00b4d8' }} /> Order Tracking
+                        </h2>
+
+                        {isTrackingLoading ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+                                <Loader2 size={16} className="animate-spin" /> Loading tracking information...
+                            </div>
+                        ) : tracking?.available && tracking.timeline ? (
+                            <div>
+                                {/* Timeline Steps */}
+                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '2rem', position: 'relative' }}>
+                                    {/* Progress Bar background */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '16px',
+                                        left: '16px',
+                                        right: '16px',
+                                        height: '3px',
+                                        background: '#e8e4dc',
+                                        borderRadius: '2px',
+                                        zIndex: 0,
+                                    }} />
+                                    {/* Progress Bar filled */}
+                                    {(() => {
+                                        const lastCompleted = tracking.timeline.reduce((max, step, idx) => step.completed ? idx : max, 0);
+                                        const pct = (lastCompleted / (tracking.timeline.length - 1)) * 100;
+                                        return (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '16px',
+                                                left: '16px',
+                                                width: `calc(${pct}% - 32px * ${pct / 100})`,
+                                                height: '3px',
+                                                background: 'linear-gradient(90deg, #00b4d8, #0096b7)',
+                                                borderRadius: '2px',
+                                                zIndex: 1,
+                                                transition: 'width 0.5s ease',
+                                            }} />
+                                        );
+                                    })()}
+
+                                    {tracking.timeline.map((step, idx) => (
+                                        <div key={step.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, zIndex: 2 }}>
+                                            <div style={{
+                                                width: '32px', height: '32px', borderRadius: '50%',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                background: step.completed
+                                                    ? step.active
+                                                        ? 'linear-gradient(135deg, #00b4d8, #0096b7)'
+                                                        : '#00b4d8'
+                                                    : '#fff',
+                                                border: step.completed ? 'none' : '2px solid #e8e4dc',
+                                                color: step.completed ? '#fff' : '#94a3b8',
+                                                transition: 'all 0.3s',
+                                                boxShadow: step.active ? '0 0 0 4px rgba(0,180,216,0.2)' : 'none',
+                                            }}>
+                                                {step.completed ? <CheckCircle size={16} /> : <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#e8e4dc' }} />}
+                                            </div>
+                                            <p style={{
+                                                fontSize: '0.7rem', fontWeight: step.active ? 700 : 500,
+                                                color: step.completed ? '#0a0a23' : '#94a3b8',
+                                                marginTop: '0.5rem', textAlign: 'center',
+                                                lineHeight: 1.3,
+                                            }}>
+                                                {step.label}
+                                            </p>
+                                            {step.date && (
+                                                <p style={{ fontSize: '0.6rem', color: '#94a3b8', marginTop: '0.125rem', textAlign: 'center' }}>
+                                                    {formatTrackingDate(step.date)}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* ETA */}
+                                {tracking.etd && order.status !== 'Delivered' && order.status !== 'Cancelled' && (
+                                    <div style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                        padding: '0.75rem 1rem', background: 'rgba(0,180,216,0.05)',
+                                        borderRadius: '0.75rem', fontSize: '0.85rem', color: '#0369a1',
+                                        marginBottom: '1rem',
+                                    }}>
+                                        <Clock size={14} />
+                                        <span>Estimated delivery: <strong>{tracking.etd}</strong></span>
+                                        {order.courier_name && <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>via {order.courier_name}</span>}
+                                    </div>
+                                )}
+
+                                {/* Track URL */}
+                                {tracking.track_url && (
+                                    <a
+                                        href={tracking.track_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+                                            fontSize: '0.8rem', color: '#00b4d8', fontWeight: 600,
+                                            textDecoration: 'none', marginBottom: '1rem',
+                                        }}
+                                    >
+                                        <ExternalLink size={14} /> Track on courier website
+                                    </a>
+                                )}
+
+                                {/* Detailed Activities */}
+                                {tracking.activities && tracking.activities.length > 0 && (
+                                    <div>
+                                        <button
+                                            onClick={() => setShowAllActivities(!showAllActivities)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '0.375rem',
+                                                fontSize: '0.8rem', color: '#64648b', fontWeight: 600,
+                                                background: 'none', border: 'none', cursor: 'pointer',
+                                                padding: '0.5rem 0',
+                                            }}
+                                        >
+                                            {showAllActivities ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                            {showAllActivities ? 'Hide' : 'Show'} detailed tracking ({tracking.activities.length} updates)
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {showAllActivities && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    style={{ overflow: 'hidden' }}
+                                                >
+                                                    <div style={{
+                                                        borderLeft: '2px solid #e8e4dc', marginLeft: '0.5rem',
+                                                        paddingLeft: '1rem', marginTop: '0.5rem',
+                                                    }}>
+                                                        {tracking.activities.map((act, idx) => (
+                                                            <div key={idx} style={{
+                                                                position: 'relative', paddingBottom: '1rem',
+                                                                fontSize: '0.8rem',
+                                                            }}>
+                                                                <div style={{
+                                                                    position: 'absolute', left: '-1.375rem', top: '0.25rem',
+                                                                    width: '8px', height: '8px', borderRadius: '50%',
+                                                                    background: idx === 0 ? '#00b4d8' : '#e8e4dc',
+                                                                }} />
+                                                                <p style={{ fontWeight: 600, color: '#0a0a23' }}>{act.status}</p>
+                                                                <p style={{ color: '#64648b', fontSize: '0.75rem' }}>{act.activity}</p>
+                                                                <p style={{ color: '#94a3b8', fontSize: '0.7rem', marginTop: '0.125rem' }}>
+                                                                    {act.location && `${act.location} · `}{formatTrackingDate(act.date)}
+                                                                </p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                                {tracking?.message || 'Tracking information will be available once your order is shipped.'}
+                            </div>
+                        )}
+                    </motion.div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: '1.5rem' }}>
                     {/* Left Column (2/3) */}
@@ -306,7 +611,7 @@ export default function OrderDetailPage() {
                             style={sectionStyle}
                         >
                             <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0a0a23', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <CreditCard size={18} style={{ color: '#00b4d8' }} /> Payment Details
+                                <CreditCard size={18} style={{ color: '#00b4d8' }} /> Payment & Shipping Details
                             </h2>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 <div>
@@ -323,12 +628,18 @@ export default function OrderDetailPage() {
                                         </p>
                                     </div>
                                 )}
-                                {order.razorpay_order_id && (
+                                {order.awb_code && (
                                     <div>
-                                        <p style={labelStyle}>Razorpay Order ID</p>
-                                        <p style={{ ...valueStyle, fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-all' }}>
-                                            {order.razorpay_order_id}
+                                        <p style={labelStyle}>AWB / Tracking Number</p>
+                                        <p style={{ ...valueStyle, fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                                            {order.awb_code}
                                         </p>
+                                    </div>
+                                )}
+                                {order.courier_name && (
+                                    <div>
+                                        <p style={labelStyle}>Courier</p>
+                                        <p style={valueStyle}>{order.courier_name}</p>
                                     </div>
                                 )}
                                 <div>
@@ -355,6 +666,37 @@ export default function OrderDetailPage() {
                             }}>
                                 <Package size={18} /> Continue Shopping
                             </Link>
+
+                            {/* Cancel Order */}
+                            {canCancel && (
+                                <button
+                                    onClick={() => { setActionReason(''); setRefundMethod('original'); setShowCancelModal(true); }}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        padding: '0.875rem', border: '1px solid #fecaca', color: '#ef4444',
+                                        borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.9rem',
+                                        background: 'rgba(239,68,68,0.03)', cursor: 'pointer',
+                                    }}
+                                >
+                                    <XCircle size={18} /> Cancel Order
+                                </button>
+                            )}
+
+                            {/* Return Order */}
+                            {canReturn && (
+                                <button
+                                    onClick={() => { setActionReason(''); setRefundMethod('original'); setShowReturnModal(true); }}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        padding: '0.875rem', border: '1px solid #fed7aa', color: '#ea580c',
+                                        borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.9rem',
+                                        background: 'rgba(234,88,12,0.03)', cursor: 'pointer',
+                                    }}
+                                >
+                                    <RotateCcw size={18} /> Request Return
+                                </button>
+                            )}
+
                             <Link href="/contact" style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                                 padding: '0.875rem', border: '1px solid #e8e4dc', color: '#64648b',
@@ -366,6 +708,220 @@ export default function OrderDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* ===== CANCEL MODAL ===== */}
+            <AnimatePresence>
+                {showCancelModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(10,10,35,0.6)', backdropFilter: 'blur(4px)',
+                            zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            padding: '1.5rem',
+                        }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            style={{
+                                background: '#fff', borderRadius: '1.5rem', padding: '2rem',
+                                width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+                                position: 'relative',
+                            }}
+                        >
+                            <button onClick={() => setShowCancelModal(false)} style={{
+                                position: 'absolute', top: '1.25rem', right: '1.25rem',
+                                background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer',
+                            }}>
+                                <X size={20} />
+                            </button>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <XCircle size={24} style={{ color: '#ef4444' }} />
+                                </div>
+                                <div>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0a0a23' }}>Cancel Order</h3>
+                                    <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>#{order.id.slice(0, 8).toUpperCase()}</p>
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>
+                                    Reason for cancellation *
+                                </label>
+                                <textarea
+                                    value={actionReason}
+                                    onChange={(e) => setActionReason(e.target.value)}
+                                    placeholder="Please tell us why you want to cancel this order..."
+                                    rows={3}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '0.75rem',
+                                        border: '1px solid #e5e7eb', fontSize: '0.875rem', resize: 'vertical',
+                                        outline: 'none', fontFamily: 'inherit',
+                                    }}
+                                />
+                            </div>
+
+                            {order.payment_method !== 'COD' && (
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>
+                                        Refund Method
+                                    </label>
+                                    <select
+                                        value={refundMethod}
+                                        onChange={(e) => setRefundMethod(e.target.value)}
+                                        style={{
+                                            width: '100%', padding: '0.75rem', borderRadius: '0.75rem',
+                                            border: '1px solid #e5e7eb', fontSize: '0.875rem', outline: 'none',
+                                            background: '#fff',
+                                        }}
+                                    >
+                                        <option value="original">Refund to original payment method</option>
+                                        <option value="upi">Refund to UPI</option>
+                                        <option value="bank_transfer">Refund to bank account</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                <button
+                                    onClick={() => setShowCancelModal(false)}
+                                    style={{
+                                        flex: 1, padding: '0.875rem', borderRadius: '0.75rem',
+                                        border: '1px solid #e5e7eb', background: '#fff', color: '#64648b',
+                                        fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
+                                    }}
+                                >
+                                    Keep Order
+                                </button>
+                                <button
+                                    onClick={handleCancel}
+                                    disabled={isSubmitting || !actionReason.trim()}
+                                    style={{
+                                        flex: 1, padding: '0.875rem', borderRadius: '0.75rem',
+                                        border: 'none', background: '#ef4444', color: '#fff',
+                                        fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.9rem', opacity: isSubmitting || !actionReason.trim() ? 0.6 : 1,
+                                    }}
+                                >
+                                    {isSubmitting ? 'Cancelling...' : 'Cancel Order'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ===== RETURN MODAL ===== */}
+            <AnimatePresence>
+                {showReturnModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(10,10,35,0.6)', backdropFilter: 'blur(4px)',
+                            zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            padding: '1.5rem',
+                        }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            style={{
+                                background: '#fff', borderRadius: '1.5rem', padding: '2rem',
+                                width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+                                position: 'relative',
+                            }}
+                        >
+                            <button onClick={() => setShowReturnModal(false)} style={{
+                                position: 'absolute', top: '1.25rem', right: '1.25rem',
+                                background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer',
+                            }}>
+                                <X size={20} />
+                            </button>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <RotateCcw size={24} style={{ color: '#ea580c' }} />
+                                </div>
+                                <div>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0a0a23' }}>Request Return</h3>
+                                    <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>#{order.id.slice(0, 8).toUpperCase()}</p>
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>
+                                    Reason for return *
+                                </label>
+                                <textarea
+                                    value={actionReason}
+                                    onChange={(e) => setActionReason(e.target.value)}
+                                    placeholder="Please describe the reason for your return (e.g., damaged item, wrong product, etc.)..."
+                                    rows={3}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '0.75rem',
+                                        border: '1px solid #e5e7eb', fontSize: '0.875rem', resize: 'vertical',
+                                        outline: 'none', fontFamily: 'inherit',
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.5rem' }}>
+                                    Preferred Refund Method
+                                </label>
+                                <select
+                                    value={refundMethod}
+                                    onChange={(e) => setRefundMethod(e.target.value)}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '0.75rem',
+                                        border: '1px solid #e5e7eb', fontSize: '0.875rem', outline: 'none',
+                                        background: '#fff',
+                                    }}
+                                >
+                                    <option value="original">Refund to original payment method</option>
+                                    <option value="upi">Refund to UPI</option>
+                                    <option value="bank_transfer">Refund to bank account</option>
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                <button
+                                    onClick={() => setShowReturnModal(false)}
+                                    style={{
+                                        flex: 1, padding: '0.875rem', borderRadius: '0.75rem',
+                                        border: '1px solid #e5e7eb', background: '#fff', color: '#64648b',
+                                        fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleReturn}
+                                    disabled={isSubmitting || !actionReason.trim()}
+                                    style={{
+                                        flex: 1, padding: '0.875rem', borderRadius: '0.75rem',
+                                        border: 'none', background: '#ea580c', color: '#fff',
+                                        fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.9rem', opacity: isSubmitting || !actionReason.trim() ? 0.6 : 1,
+                                    }}
+                                >
+                                    {isSubmitting ? 'Submitting...' : 'Submit Return Request'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

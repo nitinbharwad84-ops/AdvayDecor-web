@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ChevronRight, MapPin, CreditCard, CheckCircle, ShoppingBag, ArrowLeft, Tag, X, Plus, Loader2, LogIn } from 'lucide-react';
+import { ChevronRight, MapPin, CreditCard, CheckCircle, ShoppingBag, ArrowLeft, Tag, X, Plus, Loader2, LogIn, Truck } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 import type { ShippingAddress } from '@/types';
@@ -38,7 +38,9 @@ export default function CheckoutPage() {
     const { user, isAuthenticated } = useUserAuthStore();
     const [step, setStep] = useState<Step>('shipping');
     const [mounted, setMounted] = useState(false);
-    const [shippingFee] = useState(50);
+    const [shippingFee, setShippingFee] = useState(50);
+    const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
+    const [shippingInfo, setShippingInfo] = useState<{ courier_name?: string; delivery_estimate?: string; estimated_delivery_date?: string; source?: string } | null>(null);
     const [address, setAddress] = useState<ShippingAddress>({
         full_name: '',
         phone: '',
@@ -159,6 +161,24 @@ export default function CheckoutPage() {
         };
 
         fetchAddresses();
+
+        // Fetch shipping settings (fixed fee fallback)
+        const fetchShippingSettings = async () => {
+            try {
+                const supabase = createClient();
+                const { data } = await supabase
+                    .from('site_config')
+                    .select('key, value')
+                    .in('key', ['shiprocket_fixed_shipping_fee', 'shiprocket_free_shipping_threshold']);
+                if (data) {
+                    const cfg: Record<string, string> = {};
+                    data.forEach((row: { key: string; value: string }) => { cfg[row.key] = row.value; });
+                    const fixedFee = parseFloat(cfg.shiprocket_fixed_shipping_fee || '50');
+                    setShippingFee(fixedFee);
+                }
+            } catch { }
+        };
+        fetchShippingSettings();
     }, [isAuthenticated, user]);
 
     if (!mounted) {
@@ -233,8 +253,54 @@ export default function CheckoutPage() {
         }
     };
 
+    // Calculate shipping rates when pincode changes
+    const calculateShipping = useCallback(async (pincode: string) => {
+        if (!pincode || pincode.length !== 6) return;
+
+        setIsCalculatingShipping(true);
+        try {
+            const cartItems = items.map((item) => ({
+                product_id: item.product.id,
+                quantity: item.quantity,
+                price: item.variant?.price ?? item.product.base_price,
+            }));
+
+            const res = await fetch('/api/shipping/calculate-rates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    delivery_pincode: pincode,
+                    items: cartItems,
+                    cod: paymentMethod === 'COD',
+                }),
+            });
+
+            const data = await res.json();
+            setShippingFee(data.shipping_fee ?? 50);
+            setShippingInfo({
+                courier_name: data.courier_name,
+                delivery_estimate: data.delivery_estimate,
+                estimated_delivery_date: data.estimated_delivery_date,
+                source: data.source,
+            });
+        } catch {
+            // Keep the existing shipping fee on error
+        } finally {
+            setIsCalculatingShipping(false);
+        }
+    }, [items, paymentMethod]);
+
+    // Trigger rate calculation when address pincode changes
+    useEffect(() => {
+        if (address.pincode?.length === 6 && mounted) {
+            calculateShipping(address.pincode);
+        }
+    }, [address.pincode, calculateShipping, mounted]);
+
     const handleShippingSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        // If still calculating, wait
+        if (isCalculatingShipping) return;
         setStep('payment');
     };
 
@@ -899,7 +965,11 @@ export default function CheckoutPage() {
                                     Your order <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0a0a23' }}>#{orderId.substring(0, 8).toUpperCase()}</span> has been confirmed.
                                 </p>
                                 <p style={{ fontSize: '0.8rem', color: '#9e9eb8', marginBottom: '2rem' }}>
-                                    You&apos;ll receive an email confirmation shortly. Estimated delivery in 5-7 business days.
+                                    You&apos;ll receive an email confirmation shortly.
+                                    {shippingInfo?.delivery_estimate
+                                        ? ` Estimated delivery: ${shippingInfo.delivery_estimate}.`
+                                        : ' Estimated delivery in 5-7 business days.'
+                                    }
                                 </p>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
@@ -992,9 +1062,26 @@ export default function CheckoutPage() {
                                         <span style={{ fontWeight: 500 }}>{formatCurrency(subtotal)}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                                        <span style={{ color: '#64648b' }}>Shipping</span>
-                                        <span style={{ fontWeight: 500 }}>{formatCurrency(shippingFee)}</span>
+                                        <span style={{ color: '#64648b', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                            Shipping
+                                            {isCalculatingShipping && <Loader2 size={12} className="animate-spin" />}
+                                        </span>
+                                        <span style={{ fontWeight: 500 }}>
+                                            {isCalculatingShipping
+                                                ? 'Calculating...'
+                                                : shippingFee === 0
+                                                    ? <span style={{ color: '#16a34a' }}>Free</span>
+                                                    : formatCurrency(shippingFee)
+                                            }
+                                        </span>
                                     </div>
+                                    {shippingInfo?.delivery_estimate && !isCalculatingShipping && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.7rem', color: '#94a3b8' }}>
+                                            <Truck size={10} />
+                                            <span>Est. delivery: {shippingInfo.delivery_estimate}</span>
+                                            {shippingInfo.courier_name && <span> via {shippingInfo.courier_name}</span>}
+                                        </div>
+                                    )}
                                     {appliedCoupon && (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#16a34a' }}>
                                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>

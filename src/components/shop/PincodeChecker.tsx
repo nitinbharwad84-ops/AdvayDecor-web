@@ -1,17 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Truck, CheckCircle, XCircle } from 'lucide-react';
+import { MapPin, Truck, CheckCircle, XCircle, IndianRupee, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatCurrency } from '@/lib/utils';
+
+interface PincodeCheckerProps {
+    productWeight?: number;
+}
 
 interface PincodeResult {
     status: 'success' | 'error';
     message: string;
-    area?: string;
-    deliveryDays?: string;
+    available?: boolean;
+    deliveryEstimate?: string;
+    estimatedDeliveryDate?: string;
+    shippingCost?: number;
+    courierName?: string;
+    isFree?: boolean;
+    freeThreshold?: number;
+    source?: string;
 }
 
-export default function PincodeChecker() {
+export default function PincodeChecker({ productWeight }: PincodeCheckerProps) {
     const [pincode, setPincode] = useState('');
     const [result, setResult] = useState<PincodeResult | null>(null);
     const [isChecking, setIsChecking] = useState(false);
@@ -22,69 +33,63 @@ export default function PincodeChecker() {
         setResult(null);
 
         try {
-            // Use the free India Post Pincode API
-            const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+            const res = await fetch('/api/shipping/check-pincode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    delivery_pincode: pincode,
+                    weight: productWeight || 0.5,
+                    cod: false,
+                }),
+            });
+
             const data = await res.json();
 
-            if (data && data[0]) {
-                const apiResult = data[0];
-
-                if (apiResult.Status === 'Success' && apiResult.PostOffice && apiResult.PostOffice.length > 0) {
-                    const postOffice = apiResult.PostOffice[0];
-                    const area = `${postOffice.Name}, ${postOffice.District}, ${postOffice.State}`;
-
-                    // Determine delivery estimate based on region
-                    let deliveryDays = '5-7 business days';
-                    const state = postOffice.State?.toLowerCase() || '';
-
-                    // Metro cities - faster delivery
-                    const metroCities = ['mumbai', 'delhi', 'bangalore', 'bengaluru', 'hyderabad', 'chennai', 'kolkata', 'pune', 'ahmedabad'];
-                    const district = postOffice.District?.toLowerCase() || '';
-                    if (metroCities.some(city => district.includes(city))) {
-                        deliveryDays = '3-5 business days';
-                    }
-                    // Tier 2 states - moderate delivery
-                    else if (['maharashtra', 'karnataka', 'tamil nadu', 'gujarat', 'rajasthan', 'uttar pradesh', 'madhya pradesh', 'telangana'].includes(state)) {
-                        deliveryDays = '5-7 business days';
-                    }
-                    // Remote / NE India - longer delivery
-                    else if (['arunachal pradesh', 'assam', 'manipur', 'meghalaya', 'mizoram', 'nagaland', 'sikkim', 'tripura', 'jammu and kashmir', 'ladakh', 'andaman and nicobar islands', 'lakshadweep'].includes(state)) {
-                        deliveryDays = '7-12 business days';
-                    }
-
-                    setResult({
-                        status: 'success',
-                        message: `Delivery available to ${area}`,
-                        area,
-                        deliveryDays,
-                    });
-                } else if (apiResult.Status === 'Error') {
-                    setResult({
-                        status: 'error',
-                        message: 'Invalid pincode. Please check and try again.',
-                    });
-                } else {
-                    setResult({
-                        status: 'error',
-                        message: 'No delivery information found for this pincode.',
-                    });
-                }
+            if (data.available) {
+                setResult({
+                    status: 'success',
+                    message: 'Delivery available to this pincode',
+                    available: true,
+                    deliveryEstimate: data.delivery_estimate || '5-7 business days',
+                    estimatedDeliveryDate: data.estimated_delivery_date || null,
+                    shippingCost: data.shipping_cost ?? 0,
+                    courierName: data.courier_name || null,
+                    source: data.source,
+                });
             } else {
                 setResult({
                     status: 'error',
-                    message: 'Unable to verify pincode. Please try again.',
+                    message: data.message || 'Delivery is not available to this pincode.',
+                    available: false,
                 });
             }
         } catch (error) {
             console.error('Pincode check error:', error);
-            // Fallback if API is unreachable — still allow checkout
+            // Fallback if API is unreachable
             setResult({
                 status: 'success',
                 message: 'Delivery service available. Estimated delivery in 5-7 business days.',
-                deliveryDays: '5-7 business days',
+                deliveryEstimate: '5-7 business days',
+                available: true,
+                source: 'fallback',
             });
         } finally {
             setIsChecking(false);
+        }
+    };
+
+    // Format delivery date nicely
+    const formatDeliveryDate = (dateStr: string | undefined): string | null => {
+        if (!dateStr) return null;
+        try {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-IN', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+            });
+        } catch {
+            return null;
         }
     };
 
@@ -169,14 +174,43 @@ export default function PincodeChecker() {
                         <div>
                             <p style={{ fontWeight: 500 }}>{result.message}</p>
                             {result.status === 'success' && (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.375rem' }}>
-                                    {result.deliveryDays && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
-                                            <Truck size={12} />
-                                            Estimated delivery: {result.deliveryDays}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginTop: '0.5rem' }}>
+                                    {/* Delivery estimate */}
+                                    {result.deliveryEstimate && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8rem', color: '#334155' }}>
+                                            <Truck size={13} style={{ color: '#00b4d8' }} />
+                                            <span style={{ fontWeight: 600 }}>
+                                                {result.estimatedDeliveryDate
+                                                    ? `Delivery by ${formatDeliveryDate(result.estimatedDeliveryDate) || result.deliveryEstimate}`
+                                                    : `Estimated: ${result.deliveryEstimate}`
+                                                }
+                                            </span>
                                         </div>
                                     )}
-                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+
+                                    {/* Shipping cost */}
+                                    {result.shippingCost !== undefined && result.source !== 'fallback' && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8rem', color: '#334155' }}>
+                                            <IndianRupee size={13} style={{ color: '#00b4d8' }} />
+                                            <span>
+                                                {result.shippingCost === 0
+                                                    ? <span style={{ color: '#16a34a', fontWeight: 600 }}>Free Shipping</span>
+                                                    : <>Shipping: <span style={{ fontWeight: 600 }}>{formatCurrency(result.shippingCost)}</span></>
+                                                }
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Courier name */}
+                                    {result.courierName && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.75rem', color: '#94a3b8' }}>
+                                            <Clock size={12} />
+                                            <span>via {result.courierName}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Free shipping info */}
+                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.125rem' }}>
                                         Free shipping on orders above ₹999
                                     </div>
                                 </div>

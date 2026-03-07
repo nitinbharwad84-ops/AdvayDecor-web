@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Plus, Trash2, Upload, ImageIcon, Loader2, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Upload, ImageIcon, Loader2, X, Package } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import type { Product } from '@/types';
@@ -35,6 +35,7 @@ export default function AdminProductEditPage() {
     const [form, setForm] = useState({
         title: '', slug: '', description: '', base_price: '',
         category: '', has_variants: false, is_active: true,
+        weight: '0.5', length: '10', breadth: '10', height: '10',
     });
 
     const [variants, setVariants] = useState<{ id: string; variant_name: string; sku: string; price: string; stock_quantity: string; is_active: boolean }[]>([]);
@@ -77,6 +78,10 @@ export default function AdminProductEditPage() {
                         category: product.category,
                         has_variants: product.has_variants,
                         is_active: product.is_active,
+                        weight: (product as any).weight?.toString() || '0.5',
+                        length: (product as any).length?.toString() || '10',
+                        breadth: (product as any).breadth?.toString() || '10',
+                        height: (product as any).height?.toString() || '10',
                     });
                     setVariants(
                         (product.variants || []).map(v => ({
@@ -114,6 +119,10 @@ export default function AdminProductEditPage() {
                 category: form.category,
                 has_variants: form.has_variants,
                 is_active: form.is_active,
+                weight: parseFloat(form.weight) || 0.5,
+                length: parseFloat(form.length) || 10,
+                breadth: parseFloat(form.breadth) || 10,
+                height: parseFloat(form.height) || 10,
                 variants: form.has_variants
                     ? variants.map(v => ({
                         variant_name: v.variant_name,
@@ -538,6 +547,56 @@ export default function AdminProductEditPage() {
                                 Enable variants to add color, size, or other options.
                             </div>
                         )}
+                    </div>
+
+                    {/* Shipping Details */}
+                    <div style={cardStyle}>
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0a0a23', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Package size={18} style={{ color: '#00b4d8' }} /> Shipping Details
+                        </h2>
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '1.25rem' }}>Used for Shiprocket shipping cost calculation</p>
+                        <div className="admin-variant-grid">
+                            <div>
+                                <label style={labelStyle}>Weight (kg)</label>
+                                <input
+                                    type="number" step="0.1" min="0.1"
+                                    value={form.weight}
+                                    onChange={(e) => setForm({ ...form, weight: e.target.value })}
+                                    style={{ ...inputStyle }}
+                                    placeholder="0.5"
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Length (cm)</label>
+                                <input
+                                    type="number" step="1" min="1"
+                                    value={form.length}
+                                    onChange={(e) => setForm({ ...form, length: e.target.value })}
+                                    style={{ ...inputStyle }}
+                                    placeholder="10"
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Breadth (cm)</label>
+                                <input
+                                    type="number" step="1" min="1"
+                                    value={form.breadth}
+                                    onChange={(e) => setForm({ ...form, breadth: e.target.value })}
+                                    style={{ ...inputStyle }}
+                                    placeholder="10"
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Height (cm)</label>
+                                <input
+                                    type="number" step="1" min="1"
+                                    value={form.height}
+                                    onChange={(e) => setForm({ ...form, height: e.target.value })}
+                                    style={{ ...inputStyle }}
+                                    placeholder="10"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
