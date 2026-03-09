@@ -7,7 +7,7 @@ const badges = [
     { icon: Truck, label: 'Pan-India Delivery', sub: 'Free above ₹999' },
     { icon: Shield, label: 'Secure Payments', sub: '100% Protected' },
     { icon: Sparkles, label: 'Artisan Crafted', sub: 'Handmade with love' },
-    { icon: Undo2, label: 'Easy Returns', sub: '7-day return policy' },
+    { icon: Undo2, label: 'Easy Returns', sub: '5-day return policy' },
 ];
 
 export default function TrustBadges() {
