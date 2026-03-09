@@ -35,6 +35,9 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "AdvayDecor",
   },
+  verification: {
+    google: "GVNgZZ_0bSD0QJuRyvEBEbGuNuX1xgZ296vLruj4_JY",
+  },
 };
 
 // PWA Service Worker Registration
