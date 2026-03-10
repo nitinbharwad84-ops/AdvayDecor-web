@@ -13,7 +13,7 @@ export default function ShippingPolicyPage() {
         {
             icon: MapPin,
             title: 'Shipping Destinations',
-            content: 'We currently ship anywhere within India. For our international customers, please contact us directly at hello@advaydecor.com for special shipping arrangements and custom duty calculations.',
+            content: 'We currently ship anywhere within India. For our international customers, please contact us directly at help@advaydecor.in for special shipping arrangements and custom duty calculations.',
         },
         {
             icon: Clock,
