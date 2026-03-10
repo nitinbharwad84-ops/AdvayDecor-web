@@ -329,40 +329,83 @@ export default function OrderDetailPage() {
                                 <Package size={18} /> Continue Shopping
                             </Link>
 
-                            {/* Cancellations and Returns */}
-                            {['Awaiting Payment', 'Pending', 'Processing'].includes(order.status) && (
-                                <button
-                                    onClick={handleCancelOrder}
-                                    disabled={actionLoading}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                        padding: '0.875rem', border: '1px solid #ef4444', color: '#ef4444',
-                                        background: 'transparent', borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-                                        opacity: actionLoading ? 0.7 : 1
-                                    }}
-                                >
-                                    {actionLoading ? <Loader2 size={18} className="animate-spin" /> : <X size={18} />} Cancel Order
-                                </button>
-                            )}
-                            {order.status === 'Delivered' && (
-                                <button
-                                    onClick={handleReturnOrder}
-                                    disabled={actionLoading}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                        padding: '0.875rem', border: '1px solid #d97706', color: '#d97706',
-                                        background: 'transparent', borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-                                        opacity: actionLoading ? 0.7 : 1
-                                    }}
-                                >
-                                    {actionLoading ? <Loader2 size={18} className="animate-spin" /> : <RotateCcw size={18} />} Return Order
-                                </button>
-                            )}
+                            {/* Pending Review Banner */}
                             {['Cancellation Requested', 'Return Requested'].includes(order.status) && (
-                                <div style={{ textAlign: 'center', padding: '1rem', background: '#f5f0e8', borderRadius: '0.75rem', fontSize: '0.85rem', color: '#64648b' }}>
+                                <div style={{ textAlign: 'center', padding: '1rem', background: '#fff7ed', borderRadius: '0.75rem', fontSize: '0.85rem', color: '#c2410c', border: '1px solid #fed7aa' }}>
+                                    <HelpCircle size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.4rem' }} />
                                     Your {order.status === 'Return Requested' ? 'return' : 'cancellation'} request is currently under review.
                                 </div>
                             )}
+
+                            {/* Cancel Order — always visible, conditionally enabled */}
+                            {(() => {
+                                const canCancel = ['Awaiting Payment', 'Pending', 'Processing'].includes(order.status);
+                                const isDisabled = !canCancel || actionLoading;
+                                return (
+                                    <div style={{ position: 'relative' }}>
+                                        <button
+                                            onClick={canCancel ? handleCancelOrder : undefined}
+                                            disabled={isDisabled}
+                                            title={canCancel ? 'Request order cancellation' : 'Cancellation is only available for Pending or Processing orders'}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                width: '100%', padding: '0.875rem',
+                                                border: `1px solid ${canCancel ? '#ef4444' : '#d4d0c8'}`,
+                                                color: canCancel ? '#ef4444' : '#94a3b8',
+                                                background: canCancel ? 'transparent' : '#f8f7f4',
+                                                borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.9rem',
+                                                cursor: canCancel ? 'pointer' : 'not-allowed',
+                                                opacity: actionLoading ? 0.7 : 1,
+                                                transition: 'all 0.2s',
+                                            }}
+                                        >
+                                            <X size={18} /> Cancel Order
+                                        </button>
+                                        {!canCancel && (
+                                            <p style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center', marginTop: '0.25rem' }}>
+                                                {['Cancelled', 'Cancellation Requested'].includes(order.status)
+                                                    ? (order.status === 'Cancelled' ? 'This order has been cancelled' : 'Cancellation is under review')
+                                                    : 'Only available for Pending / Processing orders'}
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Return Order — always visible, conditionally enabled */}
+                            {(() => {
+                                const canReturn = order.status === 'Delivered';
+                                const isDisabled = !canReturn || actionLoading;
+                                return (
+                                    <div style={{ position: 'relative' }}>
+                                        <button
+                                            onClick={canReturn ? handleReturnOrder : undefined}
+                                            disabled={isDisabled}
+                                            title={canReturn ? 'Request order return' : 'Return is only available for Delivered orders'}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                width: '100%', padding: '0.875rem',
+                                                border: `1px solid ${canReturn ? '#d97706' : '#d4d0c8'}`,
+                                                color: canReturn ? '#d97706' : '#94a3b8',
+                                                background: canReturn ? 'transparent' : '#f8f7f4',
+                                                borderRadius: '0.75rem', fontWeight: 600, fontSize: '0.9rem',
+                                                cursor: canReturn ? 'pointer' : 'not-allowed',
+                                                opacity: actionLoading ? 0.7 : 1,
+                                                transition: 'all 0.2s',
+                                            }}
+                                        >
+                                            <RotateCcw size={18} /> Return Order
+                                        </button>
+                                        {!canReturn && (
+                                            <p style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center', marginTop: '0.25rem' }}>
+                                                {['Returned', 'Return Requested'].includes(order.status)
+                                                    ? (order.status === 'Returned' ? 'This order has been returned' : 'Return is under review')
+                                                    : 'Only available for Delivered orders'}
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </motion.div>
                     </div>
                 </div>
