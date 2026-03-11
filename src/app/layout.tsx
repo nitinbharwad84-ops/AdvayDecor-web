@@ -88,9 +88,6 @@ export default function RootLayout({
           </>
         )}
 
-        {/* ======================= */}
-        {/* Meta (Facebook) Pixel    */}
-        {/* ======================= */}
         {process.env.NEXT_PUBLIC_META_PIXEL_ID && (
           <Script id="meta-pixel" strategy="afterInteractive">
             {`
@@ -107,6 +104,22 @@ export default function RootLayout({
             `}
           </Script>
         )}
+
+        {/* ======================= */}
+        {/* Google Tag (AW-17990232628) */}
+        {/* ======================= */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17990232628"
+          strategy="afterInteractive"
+        />
+        <Script id="google-tag-manual" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-17990232628');
+          `}
+        </Script>
 
         <Toaster
           position="top-center"
