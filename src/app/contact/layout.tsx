@@ -1,19 +1,19 @@
 import { Metadata } from 'next';
+import { getSeoConfig } from '@/lib/seo-config';
 
-export const metadata: Metadata = {
-    title: 'Contact Us | Handmade Home Decor Mumbai - AdvayDecor',
-    description: 'AdvayDecor is a premium home decor brand based in Dahisar East, Mumbai. Reach out for bespoke artisan cushions and accessories.',
-    keywords: [
-        'handmade home decor Mumbai',
-        'artisan cushions Dahisar',
-        'AdvayDecor contact',
-    ],
-    openGraph: {
-        title: 'Contact Us | Handmade Home Decor Mumbai - AdvayDecor',
-        description: 'Reach out to AdvayDecor — premium home decor from Dahisar East, Mumbai.',
-        type: 'website',
-    },
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const seo = await getSeoConfig('contact');
+    return {
+        title: seo.title,
+        description: seo.description,
+        keywords: seo.keywords,
+        openGraph: {
+            title: seo.ogTitle || seo.title,
+            description: seo.ogDescription || seo.description,
+            type: 'website',
+        },
+    };
+}
 
 export default function ContactLayout({ children }: { children: React.ReactNode }) {
     return <>{children}</>;

@@ -46,3 +46,25 @@ export const useAdminAuthStore = create<AdminAuthState>()(
         { name: 'advay-admin-auth' }
     )
 );
+
+// ---------- SEO Auth (SEO dashboard users — separate from admin) ----------
+interface SeoAuthState {
+    isSeoAuthenticated: boolean;
+    seoEmail: string | null;
+    setSeoAuth: (email: string) => void;
+    clearSeoAuth: () => void;
+}
+
+export const useSeoAuthStore = create<SeoAuthState>()(
+    persist(
+        (set) => ({
+            isSeoAuthenticated: false,
+            seoEmail: null,
+            setSeoAuth: (email: string) =>
+                set({ isSeoAuthenticated: true, seoEmail: email }),
+            clearSeoAuth: () =>
+                set({ isSeoAuthenticated: false, seoEmail: null }),
+        }),
+        { name: 'advay-seo-auth' }
+    )
+);
