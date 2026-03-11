@@ -19,7 +19,7 @@ const quickLinks = [
     { name: 'Page Metadata', href: '/seo/metadata', icon: FileText, color: '#22c55e', desc: 'Manage titles, descriptions & keywords' },
     { name: 'Analytics', href: '/seo/analytics', icon: BarChart3, color: '#3b82f6', desc: 'Google Analytics & tracking' },
     { name: 'Search Console', href: '/seo/search-console', icon: Search, color: '#f59e0b', desc: 'Indexing & search performance' },
-    { name: 'Sitemap', href: '/seo/sitemap', icon: Map, color: '#8b5cf6', desc: 'View sitemap URLs' },
+    { name: 'Sitemap', href: '/seo/sitemap-view', icon: Map, color: '#8b5cf6', desc: 'View sitemap URLs' },
     { name: 'Settings', href: '/seo/settings', icon: Settings, color: '#64748b', desc: 'Tracking IDs & configuration' },
 ];
 

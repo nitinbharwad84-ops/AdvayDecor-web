@@ -26,7 +26,7 @@ const sidebarLinks = [
     { name: 'Page Metadata', href: '/seo/metadata', icon: FileText },
     { name: 'Analytics', href: '/seo/analytics', icon: BarChart3 },
     { name: 'Search Console', href: '/seo/search-console', icon: Search },
-    { name: 'Sitemap', href: '/seo/sitemap', icon: Map },
+    { name: 'Sitemap', href: '/seo/sitemap-view', icon: Map },
     { name: 'Settings', href: '/seo/settings', icon: Settings },
 ];
 
