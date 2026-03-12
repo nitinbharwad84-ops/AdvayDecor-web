@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['advaydecor.vercel.app']
+      allowedOrigins: ['advaydecor.in', 'advaydecor.vercel.app']
     }
   }
 };

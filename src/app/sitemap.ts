@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server';
 // Automated XML Sitemap with keyword-rich category URLs
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const supabase = await createServerSupabaseClient();
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://advaydecor.vercel.app';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://advaydecor.in';
 
     // Fetch all active products
     const { data: products } = await supabase

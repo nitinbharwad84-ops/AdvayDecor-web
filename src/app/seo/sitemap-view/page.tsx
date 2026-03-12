@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Map, ExternalLink, Loader2, Globe, Link2 } from 'lucide-react';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://advaydecor.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://advaydecor.in';
 
 interface SitemapUrl {
     url: string;

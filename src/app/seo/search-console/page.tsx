@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { Search, ExternalLink, CheckCircle, Globe, Link2, FileText } from 'lucide-react';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://advaydecor.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://advaydecor.in';
 const GOOGLE_VERIFICATION = 'GVNgZZ_0bSD0QJuRyvEBEbGuNuX1xgZ296vLruj4_JY';
 
 export default function SeoSearchConsolePage() {
