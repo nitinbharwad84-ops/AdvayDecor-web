@@ -131,6 +131,29 @@ export async function middleware(request: NextRequest) {
     // Admin routes are protected client-side via useAdminAuthStore in admin/layout.tsx
     // No server-side redirect needed — the admin layout handles auth guard
 
+    // ==============================
+    // 3. Security Headers (SEO & Safety)
+    // ==============================
+    const cspHeader = `
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://checkout.razorpay.com;
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' blob: data: https://images.unsplash.com *.supabase.co https://www.facebook.com https://www.google.com https://www.google-analytics.com https://*.razorpay.com;
+        font-src 'self' data:;
+        connect-src 'self' *.supabase.co https://www.google-analytics.com https://vitals.vercel-insights.com https://api.razorpay.com;
+        frame-src 'self' https://checkout.razorpay.com https://www.facebook.com;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self' https://api.razorpay.com;
+        upgrade-insecure-requests;
+    `.replace(/\s{2,}/g, ' ').trim();
+
+    response.headers.set('Content-Security-Policy', cspHeader);
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+
     return response;
 }
 
