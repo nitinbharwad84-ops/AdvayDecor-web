@@ -26,7 +26,7 @@ import { Toaster } from "react-hot-toast";
 import Script from 'next/script';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://advaydecor.in'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.advaydecor.in'),
   title: "Advay Decor: Premium Home Decor & Cushion Covers Online India",
   description: "Advay Decor offers artisan cushions, linen covers & designer home decor. Pan-India shipping directly from our Mumbai studio.",
   applicationName: "Advay Decor",
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     title: "Advay Decor",
   },
   alternates: {
-    canonical: 'https://advaydecor.in',
+    canonical: 'https://www.advaydecor.in',
   },
   icons: {
     icon: [
@@ -119,7 +119,7 @@ export default function RootLayout({
               "@type": "WebSite",
               "name": "Advay Decor",
               "alternateName": ["AdvayDecor", "Advaya Decor"],
-              "url": "https://advaydecor.in"
+              "url": "https://www.advaydecor.in"
             }),
           }}
         />

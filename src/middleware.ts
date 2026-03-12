@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
     // Enforce primary domain to prevent indexing of Vercel URLs
     if (host === 'advaydecor.vercel.app' && process.env.NODE_ENV === 'production') {
         return NextResponse.redirect(
-            `https://advaydecor.in${pathname}${searchParams}`,
+            `https://www.advaydecor.in${pathname}${searchParams}`,
             301
         );
     }
