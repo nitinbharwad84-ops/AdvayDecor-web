@@ -1,12 +1,10 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Login / Sign Up | AdvayDecor',
-    description: 'Join the AdvayDecor community. Access your order history, manage your wishlist, and save your artisanal home preferences.',
-    openGraph: {
-        title: 'Customer Login | AdvayDecor',
-        description: 'Join the AdvayDecor community.',
-        type: 'website',
+    title: 'Login to Your Account | AdvayDecor',
+    robots: {
+        index: false,
+        follow: false,
     },
 };
 

@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Admin Login | AdvayDecor',
+    title: 'Admin Portal Login | AdvayDecor',
     robots: {
         index: false,
         follow: false,

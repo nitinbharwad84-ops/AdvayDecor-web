@@ -12,6 +12,9 @@ export const metadata: Metadata = {
         'home decor trends 2026',
         'living room cushion trends',
     ],
+    alternates: {
+        canonical: '/trends/2026-boucle-cushions',
+    },
     openGraph: {
         title: 'Top Bouclé Cushion Trends 2026',
         description: 'Bouclé cushions are the hottest home decor trend in 2026.',
