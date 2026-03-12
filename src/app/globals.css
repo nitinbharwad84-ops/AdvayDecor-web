@@ -99,6 +99,7 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -183,6 +184,16 @@ body {
 
   to {
     opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+
+  to {
     transform: translateY(0);
   }
 }
@@ -300,18 +311,9 @@ body {
   }
 }
 
-/* Smooth scroll for the entire page */
-html {
-  scroll-behavior: smooth;
-  -webkit-text-size-adjust: 100%;
-}
 
-/* Proper box sizing */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+
+
 
 /* Prevent images from overflowing on mobile */
 img,

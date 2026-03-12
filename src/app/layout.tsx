@@ -5,15 +5,14 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-display",
-  weight: ["400", "500", "600", "700", "800"],
-  style: ["normal", "italic"],
+  weight: ["600", "700"],
 });
 
 export const viewport: Viewport = {
@@ -108,6 +107,8 @@ export default function RootLayout({
         {/* Preconnect to external origins for faster resource loading */}
         <link rel="preconnect" href="https://images.unsplash.com" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://awkaeeteelujitzgwzfr.supabase.co" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://awkaeeteelujitzgwzfr.supabase.co" />
 
         {/* Inline JSON-LD for site name — no need for afterInteractive */}
         <script
@@ -146,7 +147,7 @@ export default function RootLayout({
         )}
 
         {process.env.NEXT_PUBLIC_META_PIXEL_ID && (
-          <Script id="meta-pixel" strategy="afterInteractive">
+          <Script id="meta-pixel" strategy="lazyOnload">
             {`
               !function(f,b,e,v,n,t,s)
               {if(f.fbq)return;n=f.fbq=function(){n.callMethod?

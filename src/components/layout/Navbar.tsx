@@ -60,7 +60,7 @@ export default function Navbar() {
                 @keyframes spin { to { transform: rotate(360deg); } }
             `}</style>
 
-            <motion.header
+            <header
                 style={{
                     position: 'fixed',
                     top: 0,
@@ -76,10 +76,8 @@ export default function Navbar() {
                     WebkitBackdropFilter: showSolid ? 'blur(20px) saturate(1.4)' : 'none',
                     borderBottom: showSolid ? '1px solid rgba(0,0,0,0.04)' : '1px solid transparent',
                     boxShadow: showSolid ? '0 1px 12px rgba(0,0,0,0.04)' : 'none',
+                    animation: 'slideDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) both',
                 }}
-                initial={{ y: -100 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] as const }}
             >
                 <div style={{
                     maxWidth: '1280px',
@@ -307,7 +305,7 @@ export default function Navbar() {
                         </button>
                     </div>
                 </div>
-            </motion.header>
+            </header>
 
             {/* Mobile Menu Overlay */}
             <AnimatePresence>

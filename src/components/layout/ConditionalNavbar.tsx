@@ -2,7 +2,9 @@
 
 import { usePathname } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
-import CartDrawer from '@/components/shop/CartDrawer';
+import dynamic from 'next/dynamic';
+
+const CartDrawer = dynamic(() => import('@/components/shop/CartDrawer'), { ssr: false });
 
 export default function ConditionalNavbar() {
     const pathname = usePathname();

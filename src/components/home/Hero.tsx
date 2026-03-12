@@ -25,13 +25,13 @@ export default function Hero() {
                 style={{ y, scale }}
             >
                 <Image
-                    src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1920&q=80"
+                    src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1920&q=75"
                     alt="Elegant living room with premium home decor by Advay Decor"
                     fill
                     priority
                     fetchPriority="high"
                     sizes="100vw"
-                    quality={80}
+                    quality={75}
                     className="object-cover"
                     placeholder="blur"
                     blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWEREiMxQf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJYvD6## truncated"
