@@ -110,7 +110,11 @@ export default function NotFound() {
                     <p style={{ marginBottom: '0.5rem', fontStyle: 'italic' }}>"Art should be found in every corner of your home."</p>
                     <p>
                         Need assistance? Contact us at 
-                        <a href="mailto:help@advaydecor.in" className="hover:underline" style={{ marginLeft: '0.35rem', color: '#00b4d8', fontWeight: 600, textDecoration: 'none' }}>
+                        <a href="mailto:support@advaydecor.in" className="hover:underline" style={{ marginLeft: '0.35rem', color: '#00b4d8', fontWeight: 600, textDecoration: 'none' }}>
+                            support@advaydecor.in
+                        </a>
+                        <span style={{ margin: '0 0.5rem' }}>or</span>
+                        <a href="mailto:help@advaydecor.in" className="hover:underline" style={{ color: '#00b4d8', fontWeight: 600, textDecoration: 'none' }}>
                             help@advaydecor.in
                         </a>
                     </p>

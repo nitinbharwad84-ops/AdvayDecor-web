@@ -13,7 +13,7 @@ export default function ReturnsPolicyPage() {
         {
             icon: PackageCheck,
             title: 'How to Initiate a Return',
-            content: 'To start a return, simply contact us at help@advaydecor.in with your order number and the reason for your return. We will provide you with a return authorization and instructions on how and where to send your package.',
+            content: 'To start a return, simply contact us at support@advaydecor.in or help@advaydecor.in with your order number and the reason for your return. We will provide you with a return authorization and instructions on how and where to send your package.',
         },
         {
             icon: AlertTriangle,

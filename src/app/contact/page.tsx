@@ -33,7 +33,8 @@ export default function ContactPage() {
     };
 
     const contactInfo = [
-        { icon: Mail, label: 'help@advaydecor.in', sub: 'We reply within 24 hours' },
+        { icon: Mail, label: 'support@advaydecor.in', sub: 'For order related queries' },
+        { icon: Mail, label: 'help@advaydecor.in', sub: 'General support & inquiries' },
         { icon: Phone, label: '+91 98765 43210', sub: 'Mon-Sat, 10am–7pm IST' },
         { icon: MapPin, label: 'Mumbai, Maharashtra', sub: 'India' },
         { icon: Clock, label: 'Mon - Sat', sub: '10:00 AM - 7:00 PM IST' },

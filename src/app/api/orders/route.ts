@@ -287,7 +287,8 @@ export async function POST(request: Request) {
                             </div>
 
                             <hr style="border: none; border-top: 1px solid #f0ece4; margin: 24px 0;" />
-                            <p style="font-size: 12px; color: #9e9eb8; text-align: center;">If you have any questions, please contact us at help@advaydecor.in</p>
+                            <p style="font-size: 12px; color: #9e9eb8; text-align: center;">If you have any questions, please contact us at support@advaydecor.in</p>
+                            <p style="font-size: 12px; color: #9e9eb8; text-align: center;">help@advaydecor.in</p>
                             <p style="font-size: 12px; color: #9e9eb8; text-align: center;">© 2026 AdvayDecor. All rights reserved.</p>
                         </div>
                     `,

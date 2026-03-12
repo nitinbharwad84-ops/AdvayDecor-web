@@ -135,6 +135,10 @@ export default function Footer() {
                             </li>
                             <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                 <Mail size={16} style={{ color: '#00b4d8', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>support@advaydecor.in</span>
+                            </li>
+                            <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <Mail size={16} style={{ color: '#00b4d8', flexShrink: 0 }} />
                                 <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>help@advaydecor.in</span>
                             </li>
                         </ul>
