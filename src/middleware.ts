@@ -48,11 +48,20 @@ export async function middleware(request: NextRequest) {
     // 0. Domain Redirection (SEO)
     // ==============================
     // Enforce primary domain to prevent indexing of Vercel or Apex URLs
-    if ((host === 'advaydecor.vercel.app' || host === 'advaydecor.in') && process.env.NODE_ENV === 'production') {
+    const isVercelDomain = host?.endsWith('.vercel.app');
+    const isApexDomain = host === 'advaydecor.in'; // Naked domain
+
+    if ((isVercelDomain || isApexDomain) && process.env.NODE_ENV === 'production') {
         const redirectResponse = NextResponse.redirect(
             `https://www.advaydecor.in${pathname}${searchParams}`,
             301
         );
+        
+        // Tell search engines NOT to index the Vercel URL if they somehow reach it
+        if (isVercelDomain) {
+            redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow, nosnippet, noarchive');
+        }
+
         // Important: Redirects should also carry security headers for auditing tools
         redirectResponse.headers.set('X-Frame-Options', 'DENY');
         redirectResponse.headers.set('X-Content-Type-Options', 'nosniff');
