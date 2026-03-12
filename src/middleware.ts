@@ -56,6 +56,7 @@ export async function middleware(request: NextRequest) {
         // Important: Redirects should also carry security headers for auditing tools
         redirectResponse.headers.set('X-Frame-Options', 'DENY');
         redirectResponse.headers.set('X-Content-Type-Options', 'nosniff');
+        redirectResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
         return redirectResponse;
     }
 
@@ -91,6 +92,7 @@ export async function middleware(request: NextRequest) {
                                 'X-RateLimit-Remaining': '0',
                                 'X-Frame-Options': 'DENY',
                                 'X-Content-Type-Options': 'nosniff',
+                                'Referrer-Policy': 'strict-origin-when-cross-origin',
                             },
                         }
                     );
