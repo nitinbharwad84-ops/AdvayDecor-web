@@ -37,11 +37,12 @@ export default function ImageGallery({ images }: ImageGalleryProps) {
                             fill
                             className="object-cover"
                             sizes="80px"
+                            quality={50}
                         />
                     </button>
                 ))}
             </div>
-
+ 
             {/* Main Image */}
             <div className="flex-1 relative aspect-square rounded-2xl overflow-hidden bg-cream-dark">
                 <AnimatePresence mode="wait">
@@ -60,6 +61,7 @@ export default function ImageGallery({ images }: ImageGalleryProps) {
                             className="object-cover"
                             sizes="(max-width: 768px) 100vw, 50vw"
                             priority
+                            quality={80}
                         />
                     </motion.div>
                 </AnimatePresence>

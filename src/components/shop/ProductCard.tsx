@@ -39,6 +39,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                             fill
                             className="object-cover transition-transform duration-700 group-hover:scale-110"
                             sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            quality={65}
                         />
 
                         {/* Hover overlay */}
