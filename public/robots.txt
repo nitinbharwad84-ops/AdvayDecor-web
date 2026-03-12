@@ -1,10 +1,20 @@
 # AdvayDecor — robots.txt
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /admin-login
+
+# Allow crawling but use meta noindex for these paths to avoid "Internal Link Blocked" errors
+Allow: /admin
+Allow: /admin-login
+Allow: /profile
+Allow: /login
+Allow: /cart
+Allow: /checkout
+Allow: /orders/
+
+# Block crawling of technical paths and API
 Disallow: /api/
-Disallow: /profile
+Disallow: /_next/
+Disallow: /static/
 
 # Sitemap
 Sitemap: https://www.advaydecor.in/sitemap.xml
