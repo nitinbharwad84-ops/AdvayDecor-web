@@ -1,12 +1,12 @@
-const CACHE_NAME = 'advaydecor-cache-v1';
+const CACHE_NAME = 'advaydecor-cache-v2';
 const ASSETS_TO_CACHE = [
-    '/',
     '/manifest.json',
     '/logo.ico',
 ];
 
-// Install Event
+// Install Event - skip waiting to activate immediately
 self.addEventListener('install', (event) => {
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             console.log('PWA: Caching essential shell...');
@@ -15,7 +15,7 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Activate Event (Cleanup old caches)
+// Activate Event (Cleanup old caches and claim clients immediately)
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
@@ -27,42 +27,37 @@ self.addEventListener('activate', (event) => {
                     }
                 })
             );
-        })
+        }).then(() => self.clients.claim())
     );
 });
 
-// Fetch Event (Safe Networking)
+// Fetch Event (Network-first, never cache Next.js bundles)
 self.addEventListener('fetch', (event) => {
     // Only handle GET requests
     if (event.request.method !== 'GET') return;
 
-    // We should NOT cache dynamic API routes to prevent stale pricing or user data
-    if (event.request.url.includes('/api/')) {
-        return;
-    }
+    // NEVER cache API routes
+    if (event.request.url.includes('/api/')) return;
 
-    // Network-First approach for most navigations (ensures fresh data)
-    // Stale-While-Revalidate for images and static assets
+    // NEVER cache Next.js build assets — these change on every code update
+    if (event.request.url.includes('/_next/')) return;
+
+    // For everything else: Network first, fallback to cache
     event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            const fetchPromise = fetch(event.request).then((networkResponse) => {
-                // Only cache successful GET requests for non-API domains
+        fetch(event.request)
+            .then((networkResponse) => {
+                // Cache successful responses for offline fallback (images, static files only)
                 if (networkResponse && networkResponse.status === 200) {
-                    const responseToCache = networkResponse.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseToCache);
-                    });
+                    const isStaticAsset = event.request.url.match(/\.(png|jpg|jpeg|svg|ico|woff2)$/);
+                    if (isStaticAsset) {
+                        const responseToCache = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, responseToCache);
+                        });
+                    }
                 }
                 return networkResponse;
-            });
-
-            // Use cached asset if it's an image or static file, otherwise wait for network
-            const isStaticAsset = event.request.url.match(/\.(png|jpg|jpeg|svg|ico|css|js|woff2|json)$/);
-            if (isStaticAsset && cachedResponse) {
-                return cachedResponse;
-            }
-
-            return fetchPromise.catch(() => cachedResponse);
-        })
+            })
+            .catch(() => caches.match(event.request))
     );
 });
