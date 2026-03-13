@@ -37,7 +37,7 @@ export default function ImageGallery({ images }: ImageGalleryProps) {
                             fill
                             className="object-cover"
                             sizes="80px"
-                            quality={50}
+                            unoptimized={img.image_url.includes('supabase.co')}
                         />
                     </button>
                 ))}
@@ -61,7 +61,7 @@ export default function ImageGallery({ images }: ImageGalleryProps) {
                             className="object-cover"
                             sizes="(max-width: 768px) 100vw, 50vw"
                             priority
-                            quality={80}
+                            unoptimized={currentImage.image_url.includes('supabase.co')}
                         />
                     </motion.div>
                 </AnimatePresence>

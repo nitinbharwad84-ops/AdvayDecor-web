@@ -16,6 +16,7 @@ const FALLBACK = 'https://images.unsplash.com/photo-1629949009765-40fc74c9ec21?w
 function ProductFeaturedCard({ product, index }: { product: Product; index: number }) {
     const rawImage = product.images?.[0]?.image_url || FALLBACK;
     const [imgSrc, setImgSrc] = useState(rawImage);
+    const isSupabase = imgSrc.includes('supabase.co');
 
     return (
         <motion.div
@@ -34,6 +35,7 @@ function ProductFeaturedCard({ product, index }: { product: Product; index: numb
                             alt={product.title}
                             fill
                             loading="lazy"
+                            unoptimized={isSupabase}
                             className="object-cover transition-transform duration-700 group-hover:scale-110"
                             sizes="(max-width: 768px) 50vw, 25vw"
                             onError={() => setImgSrc(FALLBACK)}
