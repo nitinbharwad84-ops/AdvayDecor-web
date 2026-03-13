@@ -18,6 +18,7 @@ import {
     ChevronRight,
     LogOut,
     Shield,
+    Globe,
 } from 'lucide-react';
 import { useAdminAuthStore } from '@/lib/auth-store';
 
@@ -145,7 +146,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
                                 textDecoration: 'none', marginBottom: '0.5rem',
                             }}
                         >
-                            <Shield size={18} />
+                            <Globe size={18} />
                             View Store
                         </Link>
                         <button
