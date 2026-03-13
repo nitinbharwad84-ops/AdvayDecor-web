@@ -8,6 +8,9 @@ interface PageProps {
     params: Promise<{ slug: string }>;
 }
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getProductData(slug: string) {
     const supabase = await createServerSupabaseClient();
     
@@ -39,7 +42,8 @@ export async function generateMetadata(
     { params }: PageProps,
     parent: ResolvingMetadata
 ): Promise<Metadata> {
-    const slug = (await params).slug;
+    const paramsObj = await params;
+    const slug = decodeURIComponent(paramsObj.slug);
     const { product } = await getProductData(slug);
 
     if (!product) {
@@ -78,7 +82,8 @@ export async function generateMetadata(
 }
 
 export default async function ProductPage({ params }: PageProps) {
-    const slug = (await params).slug;
+    const paramsObj = await params;
+    const slug = decodeURIComponent(paramsObj.slug);
     const { product, allProducts } = await getProductData(slug);
 
     if (!product) {

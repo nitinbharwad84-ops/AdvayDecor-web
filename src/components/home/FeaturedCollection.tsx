@@ -2,12 +2,11 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { createAdminClient } from '@/lib/supabase-admin';
 import type { Product } from '@/types';
+import { unstable_noStore as noStore } from 'next/cache';
 import FeaturedCollectionClient from './FeaturedCollectionClient';
 
-// Revalidate every 60 seconds (ISR)
-export const revalidate = 60;
-
 async function getFeaturedProducts(): Promise<Product[]> {
+    noStore(); // Disable caching to reflect changes instantly
     try {
         const supabase = createAdminClient();
 
