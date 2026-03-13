@@ -81,13 +81,13 @@ export default function BoucleCushions2026() {
                         }}>
                             {[
                                 'Natural tactile appeal — inviting and cozy',
-                                'Pairs beautifully with linen and cotton textures',
+                                <span>Pairs beautifully with <Link href="/cushions/linen-covers" style={{ color: '#00b4d8', textDecoration: 'underline' }}>linen and cotton textures</Link></span>,
                                 'Works in both warm and neutral color palettes',
                                 'Durable and long-lasting fabric choice',
                             ].map((point, i) => (
                                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                                     <CheckCircle size={16} style={{ color: '#00b4d8', flexShrink: 0, marginTop: '2px' }} />
-                                    <span style={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.6 }}>{point}</span>
+                                    <div style={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.6 }}>{point}</div>
                                 </div>
                             ))}
                         </div>
@@ -139,7 +139,7 @@ export default function BoucleCushions2026() {
                             Ready to Upgrade Your Space?
                         </h3>
                         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                            Explore our curated collection of premium cushion covers — from bouclé textures to vibrant embroidered designs.
+                            Explore our curated collection of <Link href="/shop" style={{ color: '#00b4d8', textDecoration: 'underline' }}>premium cushion covers</Link> — from bouclé textures to vibrant embroidered designs.
                         </p>
                         <Link
                             href="/shop"
