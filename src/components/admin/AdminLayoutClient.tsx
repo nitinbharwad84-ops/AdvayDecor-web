@@ -19,17 +19,34 @@ import {
     LogOut,
     Shield,
     Globe,
+    RotateCcw,
+    XCircle,
+    Ticket,
+    MessageSquare,
+    HelpCircle,
+    Truck,
 } from 'lucide-react';
 import { useAdminAuthStore } from '@/lib/auth-store';
 
 const sidebarLinks = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Orders', href: '/admin/orders', icon: ShoppingBag },
-    { name: 'Products', href: '/admin/products', icon: Package },
-    { name: 'Categories', href: '/admin/categories', icon: Tag },
-    { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Reviews', href: '/admin/reviews', icon: Star },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
+    // Overview
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, section: 'Overview' },
+    // Order Management
+    { name: 'Orders', href: '/admin/orders', icon: ShoppingBag, section: 'Orders' },
+    { name: 'Returns', href: '/admin/returns', icon: RotateCcw, section: 'Orders' },
+    { name: 'Cancellations', href: '/admin/cancellations', icon: XCircle, section: 'Orders' },
+    // Catalog
+    { name: 'Products', href: '/admin/products', icon: Package, section: 'Catalog' },
+    { name: 'Categories', href: '/admin/categories', icon: Tag, section: 'Catalog' },
+    { name: 'Coupons', href: '/admin/coupons', icon: Ticket, section: 'Catalog' },
+    // Customer
+    { name: 'Users', href: '/admin/users', icon: Users, section: 'Customer' },
+    { name: 'Reviews', href: '/admin/reviews', icon: Star, section: 'Customer' },
+    { name: 'Messages', href: '/admin/messages', icon: MessageSquare, section: 'Customer' },
+    // Config
+    { name: 'FAQ Questions', href: '/admin/faq-questions', icon: HelpCircle, section: 'Config' },
+    { name: 'Shiprocket', href: '/admin/shiprocket', icon: Truck, section: 'Config' },
+    { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'Config' },
 ];
 
 export default function AdminLayoutClient({ children }: { children: React.ReactNode }) {
@@ -107,31 +124,46 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
                             </div>
                         </div>
 
-                        {/* Nav links */}
-                        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                            {sidebarLinks.map((link) => {
-                                const isActive = pathname === link.href || pathname?.startsWith(link.href + '/');
-                                return (
-                                    <Link
-                                        key={link.name}
-                                        href={link.href}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '0.75rem',
-                                            padding: '0.75rem 1rem', borderRadius: '0.75rem',
-                                            fontSize: '0.875rem', fontWeight: 500,
-                                            textDecoration: 'none', transition: 'all 0.2s ease',
-                                            background: isActive ? 'rgba(0,180,216,0.08)' : 'transparent',
-                                            color: isActive ? '#00b4d8' : '#64648b',
-                                        }}
-                                    >
-                                        <link.icon size={18} />
-                                        {link.name}
-                                        {isActive && (
-                                            <ChevronRight size={14} style={{ marginLeft: 'auto', color: '#00b4d8' }} />
-                                        )}
-                                    </Link>
-                                );
-                            })}
+                        {/* Nav links with section groupings */}
+                        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+                            {(() => {
+                                let lastSection = '';
+                                return sidebarLinks.map((link) => {
+                                    const isActive = pathname === link.href || pathname?.startsWith(link.href + '/');
+                                    const showHeader = link.section !== lastSection;
+                                    lastSection = link.section;
+                                    return (
+                                        <div key={link.name}>
+                                            {showHeader && link.section !== 'Overview' && (
+                                                <p style={{
+                                                    fontSize: '0.6rem', fontWeight: 700, color: '#c4c4d6',
+                                                    textTransform: 'uppercase', letterSpacing: '0.1em',
+                                                    padding: '0.75rem 1rem 0.25rem',
+                                                }}>
+                                                    {link.section}
+                                                </p>
+                                            )}
+                                            <Link
+                                                href={link.href}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                                    padding: '0.625rem 1rem', borderRadius: '0.75rem',
+                                                    fontSize: '0.875rem', fontWeight: 500,
+                                                    textDecoration: 'none', transition: 'all 0.2s ease',
+                                                    background: isActive ? 'rgba(0,180,216,0.08)' : 'transparent',
+                                                    color: isActive ? '#00b4d8' : '#64648b',
+                                                }}
+                                            >
+                                                <link.icon size={16} />
+                                                {link.name}
+                                                {isActive && (
+                                                    <ChevronRight size={13} style={{ marginLeft: 'auto', color: '#00b4d8' }} />
+                                                )}
+                                            </Link>
+                                        </div>
+                                    );
+                                });
+                            })()}
                         </nav>
                     </div>
 
@@ -208,28 +240,43 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
                                         </div>
                                     </div>
 
-                                    <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                        {sidebarLinks.map((link) => {
-                                            const isActive = pathname === link.href;
-                                            return (
-                                                <Link
-                                                    key={link.name}
-                                                    href={link.href}
-                                                    onClick={() => setIsSidebarOpen(false)}
-                                                    style={{
-                                                        display: 'flex', alignItems: 'center', gap: '0.75rem',
-                                                        padding: '0.75rem 1rem', borderRadius: '0.75rem',
-                                                        fontSize: '0.875rem', fontWeight: 500,
-                                                        textDecoration: 'none', transition: 'all 0.2s',
-                                                        background: isActive ? 'rgba(0,180,216,0.08)' : 'transparent',
-                                                        color: isActive ? '#00b4d8' : '#64648b',
-                                                    }}
-                                                >
-                                                    <link.icon size={18} />
-                                                    {link.name}
-                                                </Link>
-                                            );
-                                        })}
+                                    <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+                                        {(() => {
+                                            let lastSection = '';
+                                            return sidebarLinks.map((link) => {
+                                                const isActive = pathname === link.href || pathname?.startsWith(link.href + '/');
+                                                const showHeader = link.section !== lastSection;
+                                                lastSection = link.section;
+                                                return (
+                                                    <div key={link.name}>
+                                                        {showHeader && link.section !== 'Overview' && (
+                                                            <p style={{
+                                                                fontSize: '0.6rem', fontWeight: 700, color: '#c4c4d6',
+                                                                textTransform: 'uppercase', letterSpacing: '0.1em',
+                                                                padding: '0.75rem 1rem 0.25rem',
+                                                            }}>
+                                                                {link.section}
+                                                            </p>
+                                                        )}
+                                                        <Link
+                                                            href={link.href}
+                                                            onClick={() => setIsSidebarOpen(false)}
+                                                            style={{
+                                                                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                                                padding: '0.625rem 1rem', borderRadius: '0.75rem',
+                                                                fontSize: '0.875rem', fontWeight: 500,
+                                                                textDecoration: 'none', transition: 'all 0.2s',
+                                                                background: isActive ? 'rgba(0,180,216,0.08)' : 'transparent',
+                                                                color: isActive ? '#00b4d8' : '#64648b',
+                                                            }}
+                                                        >
+                                                            <link.icon size={16} />
+                                                            {link.name}
+                                                        </Link>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
                                     </nav>
                                 </div>
 

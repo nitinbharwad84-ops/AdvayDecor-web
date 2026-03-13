@@ -16,6 +16,13 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: '*.supabase.co',
+        pathname: '/**',
+      },
+      {
+        // Explicit Supabase project hostname for product-images bucket
+        protocol: 'https',
+        hostname: 'awkaeeteelujitzgwzfr.supabase.co',
+        pathname: '/storage/v1/object/public/**',
       },
     ],
   },
