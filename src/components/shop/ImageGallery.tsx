@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ProductImage } from '@/types';
 
@@ -31,13 +30,12 @@ export default function ImageGallery({ images }: ImageGalleryProps) {
                                 : 'border-border-light hover:border-navy/20'
                             }`}
                     >
-                        <Image
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
                             src={img.image_url}
                             alt={`View ${index + 1}`}
-                            fill
-                            unoptimized
                             className="object-cover"
-                            sizes="80px"
+                            style={{ position: 'absolute', width: '100%', height: '100%', inset: 0, objectFit: 'cover' }}
                         />
                     </button>
                 ))}
@@ -54,14 +52,12 @@ export default function ImageGallery({ images }: ImageGalleryProps) {
                         transition={{ duration: 0.3 }}
                         className="absolute inset-0"
                     >
-                        <Image
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
                             src={currentImage.image_url}
                             alt="Product image"
-                            fill
-                            unoptimized
                             className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            priority
+                            style={{ position: 'absolute', width: '100%', height: '100%', inset: 0, objectFit: 'cover' }}
                         />
                     </motion.div>
                 </AnimatePresence>

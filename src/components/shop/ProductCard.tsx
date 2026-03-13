@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
@@ -13,10 +11,10 @@ interface ProductCardProps {
     index?: number;
 }
 
+const FALLBACK = 'https://images.unsplash.com/photo-1629949009765-40fc74c9ec21?w=600&q=80';
+
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
-    const FALLBACK = 'https://images.unsplash.com/photo-1629949009765-40fc74c9ec21?w=600&q=80';
-    const rawImage = product.images?.[0]?.image_url || FALLBACK;
-    const [imgSrc, setImgSrc] = useState(rawImage);
+    const mainImage = product.images?.[0]?.image_url || FALLBACK;
     const hasLowStock = product.variants?.some((v) => v.stock_quantity > 0 && v.stock_quantity < 5);
 
     return (
@@ -36,14 +34,14 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                 }}>
                     {/* Image */}
                     <div className="relative overflow-hidden" style={{ aspectRatio: '1/1', background: '#f5f0e8' }}>
-                        <Image
-                            src={imgSrc}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={mainImage}
                             alt={product.title}
-                            fill
-                            unoptimized
+                            loading="lazy"
                             className="object-cover transition-transform duration-700 group-hover:scale-110"
-                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            onError={() => setImgSrc(FALLBACK)}
+                            style={{ position: 'absolute', width: '100%', height: '100%', inset: 0, objectFit: 'cover' }}
+                            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}
                         />
 
                         {/* Hover overlay */}
