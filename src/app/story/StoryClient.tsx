@@ -66,7 +66,7 @@ export default function StoryClient() {
                             {[
                                 {
                                     title: 'It Started with a Vision',
-                                    content: 'AdvayDecor was born from a simple yet powerful idea \u2014 that every home deserves to be a reflection of its owner\u2019s unique personality. We noticed a gap in the market: while mass-produced decor dominated shelves, there was a craving for something more personal, more artisanal, more alive.',
+                                    content: 'AdvayDecor was born from a simple yet powerful idea that every home deserves to be a reflection of its owner\u2019s unique personality. We noticed a gap in the market: while mass-produced decor dominated shelves, there was a craving for something more personal, more artisanal, more alive.',
                                 },
                                 {
                                     title: 'Craftsmanship Meets Modernity',
@@ -74,7 +74,7 @@ export default function StoryClient() {
                                 },
                                 {
                                     title: 'More Than Decor',
-                                    content: 'We don\u2019t just sell cushions and decor \u2014 we help you create spaces that tell your story. Spaces that welcome you home after a long day, that make your guests feel the warmth of your personality, and that bring a smile to your face every morning.',
+                                    content: 'We dont just sell cushions and decor \u2014 we help you create spaces that tell your story. Spaces that welcome you home after a long day, that make your guests feel the warmth of your personality, and that bring a smile to your face every morning.',
                                 },
                             ].map((section, index) => (
                                 <motion.div
@@ -189,7 +189,7 @@ export default function StoryClient() {
                     >
                         &ldquo;Your space is a canvas. Let it tell the world who you are.&rdquo;
                     </motion.blockquote>
-                    <p style={{ color: '#00b4d8', marginTop: '1.5rem', fontWeight: 600, fontSize: '0.875rem' }}>\u2014 Team AdvayDecor</p>
+                    <p style={{ color: '#00b4d8', marginTop: '1.5rem', fontWeight: 600, fontSize: '0.875rem' }}>2014 Team AdvayDecor</p>
                 </div>
             </section>
         </div>
