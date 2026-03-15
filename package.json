@@ -39,5 +39,9 @@
     "micromatch": ">=4.0.8",
     "braces": ">=3.0.3",
     "cross-spawn": ">=7.0.5"
-  }
+  },
+  "browserslist": [
+    "defaults",
+    "not IE 11"
+  ]
 }

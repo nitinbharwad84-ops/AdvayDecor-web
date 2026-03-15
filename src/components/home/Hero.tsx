@@ -64,11 +64,8 @@ export default function Hero() {
                 <div className="w-full" style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem' }}>
                     <div style={{ maxWidth: '680px' }}>
                         {/* Badge */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3, duration: 0.6 }}
-                            className="inline-flex items-center rounded-full text-sm"
+                        <div
+                            className="inline-flex items-center rounded-full text-sm animate-fade-in-up"
                             style={{
                                 gap: '0.5rem',
                                 padding: '0.5rem 1rem',
@@ -77,19 +74,17 @@ export default function Hero() {
                                 border: '1px solid rgba(255,255,255,0.12)',
                                 color: 'rgba(255,255,255,0.9)',
                                 marginBottom: '1.5rem',
+                                animationDelay: '0.3s',
                             }}
                         >
                             <Sparkles size={14} style={{ color: '#00b4d8' }} />
                             Handcrafted with Love
-                        </motion.div>
+                        </div>
 
                         {/* Heading */}
-                        <motion.h1
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5, duration: 0.7 }}
-                            className="font-bold text-white font-[family-name:var(--font-display)]"
-                            style={{ fontSize: 'clamp(2.8rem, 6vw, 5rem)', lineHeight: 1.08, marginBottom: '1.5rem' }}
+                        <h1
+                            className="font-bold text-white font-[family-name:var(--font-display)] animate-fade-in-up"
+                            style={{ fontSize: 'clamp(2.8rem, 6vw, 5rem)', lineHeight: 1.08, marginBottom: '1.5rem', animationDelay: '0.5s' }}
                         >
                             Your Space,
                             <br />
@@ -115,25 +110,20 @@ export default function Hero() {
                                     </motion.svg>
                                 </span>
                             </span>
-                        </motion.h1>
+                        </h1>
 
                         {/* Subtitle */}
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.7, duration: 0.6 }}
-                            style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.55)', maxWidth: '540px', marginBottom: '2.5rem', lineHeight: 1.7 }}
+                        <p
+                            className="animate-fade-in-up"
+                            style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.55)', maxWidth: '540px', marginBottom: '2.5rem', lineHeight: 1.7, animationDelay: '0.7s' }}
                         >
                             Elevate your space with Advay Decor. Discover our curated collection of premium, artisanal home decor crafted to inspire.
-                        </motion.p>
+                        </p>
 
                         {/* CTAs */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.9, duration: 0.6 }}
-                            className="flex flex-wrap"
-                            style={{ gap: '1rem' }}
+                        <div
+                            className="flex flex-wrap animate-fade-in-up"
+                            style={{ gap: '1rem', animationDelay: '0.9s' }}
                         >
                             <Link href="/shop">
                                 <motion.button
@@ -173,7 +163,7 @@ export default function Hero() {
                                     Our Story
                                 </motion.button>
                             </Link>
-                        </motion.div>
+                        </div>
                     </div>
                 </div>
             </motion.div>
