@@ -248,6 +248,35 @@ body {
   animation: scaleIn 0.3s var(--ease-out-expo) both;
 }
 
+@keyframes drawPath {
+  from {
+    stroke-dashoffset: 300;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-path {
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: drawPath 0.8s ease-in-out forwards;
+  animation-delay: 1.2s;
+}
+
+@keyframes bounceIndicator {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(12px);
+  }
+}
+
+.animate-bounce-indicator {
+  animation: bounceIndicator 1.5s ease-in-out infinite;
+}
+
 /* ===== GLASS EFFECT ===== */
 .glass {
   background: rgba(253, 251, 247, 0.85);
