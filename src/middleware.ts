@@ -48,7 +48,7 @@ export async function middleware(request: NextRequest) {
     // 0. Domain Redirection (SEO)
     // ==============================
     // Enforce primary domain to prevent indexing of Vercel or Apex URLs
-    const isVercelDomain = host?.endsWith('.vercel.app');
+    const isVercelDomain = host?.endsWith('.vercel.app') || host?.includes('vercel.app');
     const isApexDomain = host === 'advaydecor.in'; // Naked domain
 
     if ((isVercelDomain || isApexDomain) && process.env.NODE_ENV === 'production') {
@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
         }
 
         // Important: Redirects should also carry security headers for auditing tools
-        redirectResponse.headers.set('X-Frame-Options', 'DENY');
+        redirectResponse.headers.set('X-Frame-Options', 'SAMEORIGIN');
         redirectResponse.headers.set('X-Content-Type-Options', 'nosniff');
         redirectResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
         return redirectResponse;
@@ -99,7 +99,7 @@ export async function middleware(request: NextRequest) {
                             headers: {
                                 'Retry-After': String(Math.ceil(result.resetIn / 1000)),
                                 'X-RateLimit-Remaining': '0',
-                                'X-Frame-Options': 'DENY',
+                                'X-Frame-Options': 'SAMEORIGIN',
                                 'X-Content-Type-Options': 'nosniff',
                                 'Referrer-Policy': 'strict-origin-when-cross-origin',
                             },
@@ -158,8 +158,8 @@ export async function middleware(request: NextRequest) {
         style-src 'self' 'unsafe-inline';
         img-src 'self' blob: data: https://images.unsplash.com *.supabase.co https://www.facebook.com https://www.google.com https://www.google-analytics.com https://*.razorpay.com;
         font-src 'self' data:;
-        connect-src 'self' *.supabase.co https://www.google-analytics.com https://vitals.vercel-insights.com https://api.razorpay.com;
-        frame-src 'self' https://checkout.razorpay.com https://www.facebook.com;
+        connect-src 'self' *.supabase.co https://www.google-analytics.com https://vitals.vercel-insights.com https://api.razorpay.com https://lumberjack.razorpay.com;
+        frame-src 'self' https://checkout.razorpay.com https://www.facebook.com https://api.razorpay.com;
         object-src 'none';
         base-uri 'self';
         form-action 'self' https://api.razorpay.com;
@@ -169,7 +169,7 @@ export async function middleware(request: NextRequest) {
     // Apply security headers to the response
     const securityHeaders = {
         'Content-Security-Policy': cspHeader,
-        'X-Frame-Options': 'DENY',
+        'X-Frame-Options': 'SAMEORIGIN',
         'X-Content-Type-Options': 'nosniff',
         'Referrer-Policy': 'strict-origin-when-cross-origin',
         'X-XSS-Protection': '1; mode=block',
