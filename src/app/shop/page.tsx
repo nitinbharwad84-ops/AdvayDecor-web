@@ -36,7 +36,8 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
         } else if (category === 'Linen') {
             canonical = `${baseUrl}/cushions/linen-covers`;
         } else {
-            canonical = `${baseUrl}/shop?category=${encodeURIComponent(category)}`;
+            // All other filtered views should canonicalize to the main shop page
+            canonical = `${baseUrl}/shop`;
         }
     }
 

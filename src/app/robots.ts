@@ -7,22 +7,23 @@ export default function robots(): MetadataRoute.Robots {
         rules: [
             {
                 userAgent: '*',
-                allow: [
-                    '/',
+                allow: ['/'],
+                disallow: [
+                    '/api/',
                     '/admin',
                     '/admin-login',
+                    '/seo/',
+                    '/seo-login/',
                     '/profile',
                     '/login',
                     '/cart',
                     '/checkout',
                     '/orders',
-                ],
-                disallow: [
-                    '/api/',
-                    '/_next/',
-                    '/static/',
-                    '/seo/',
-                    '/seo-login/',
+                    // Prevent crawling parameterized/filtered URLs
+                    '/shop?*',
+                    '/*?sort=*',
+                    '/*?variant=*',
+                    '/*?page=*',
                 ],
             },
             {
