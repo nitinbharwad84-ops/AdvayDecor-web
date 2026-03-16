@@ -403,24 +403,25 @@ export default function ProductDetailClient({ product, allProducts }: ProductDet
                                 </m.button>
                             </div>
 
-                            <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-                                {/* Thumbnails relocated here */}
-                                <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
+                            <div style={{ marginBottom: '2rem', display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+                                {/* Thumbnails relocated here - 50% width */}
+                                <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                                     {currentImages.map((img, index) => (
                                         <button
                                             key={img.id}
                                             onClick={() => setActiveImageIndex(index)}
                                             style={{
                                                 position: 'relative',
-                                                width: '56px',
-                                                height: '56px',
+                                                width: 'calc(33.333% - 0.5rem)', // Show 3 per row in their 50% space
+                                                aspectRatio: '1/1',
                                                 borderRadius: '0.75rem',
                                                 overflow: 'hidden',
                                                 border: activeImageIndex === index ? '2px solid #00b4d8' : '2px solid #f0ece4',
                                                 transition: 'all 0.2s',
                                                 cursor: 'pointer',
                                                 background: 'transparent',
-                                                padding: 0
+                                                padding: 0,
+                                                minWidth: '50px'
                                             }}
                                         >
                                             <img
@@ -432,6 +433,7 @@ export default function ProductDetailClient({ product, allProducts }: ProductDet
                                     ))}
                                 </div>
                                 
+                                {/* Pincode Checker - 50% width */}
                                 <div style={{ flex: 1 }}>
                                     <PincodeChecker />
                                 </div>
