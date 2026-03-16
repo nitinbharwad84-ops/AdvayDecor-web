@@ -273,12 +273,13 @@ export default function ProductDetailClient({ product, allProducts }: ProductDet
             {/* Product Section */}
             <section style={{ padding: '2rem 0 3rem' }}>
                 <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem' }}>
-                    <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: '2rem' }}>
+                    <div className="grid grid-cols-1 lg:grid-cols-[45%_55%]" style={{ gap: '2rem', alignItems: 'flex-start' }}>
                         {/* Left: Image Gallery */}
                         <m.div
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.5 }}
+                            style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}
                         >
                             <ImageGallery 
                                 images={currentImages} 
