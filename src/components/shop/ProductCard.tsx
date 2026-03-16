@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { Star } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { Product } from '@/types';
@@ -18,7 +18,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
     const hasLowStock = product.variants?.some((v) => v.stock_quantity > 0 && v.stock_quantity < 5);
 
     return (
-        <motion.div
+        <m.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-30px' }}
@@ -48,7 +48,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-500" />
 
                         {/* Quick View */}
-                        <motion.div
+                        <m.div
                             className="absolute opacity-0 group-hover:opacity-100 transition-all duration-300"
                             style={{ bottom: '1rem', left: '1rem', right: '1rem' }}
                         >
@@ -67,7 +67,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                             }}>
                                 View Details
                             </span>
-                        </motion.div>
+                        </m.div>
 
                         {/* Badges */}
                         <div className="absolute" style={{ top: '0.75rem', left: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -116,6 +116,6 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                     </div>
                 </div>
             </Link>
-        </motion.div>
+        </m.div>
     );
 }

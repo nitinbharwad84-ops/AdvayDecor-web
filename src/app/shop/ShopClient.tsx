@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { SlidersHorizontal, Grid3X3, LayoutGrid, ChevronDown, Search, X } from 'lucide-react';
 import ProductCard from '@/components/shop/ProductCard';
 import type { Product } from '@/types';
@@ -74,14 +74,14 @@ export default function ShopClient({ initialProducts, initialCategory = 'All' }:
                 }} />
 
                 <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem', position: 'relative', zIndex: 1, textAlign: 'center' }}>
-                    <motion.span
+                    <m.span
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         style={{ color: '#00b4d8', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em' }}
                     >
                         Our Collection
-                    </motion.span>
-                    <motion.h1
+                    </m.span>
+                    <m.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
@@ -89,15 +89,15 @@ export default function ShopClient({ initialProducts, initialCategory = 'All' }:
                         style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', fontWeight: 700, color: '#fff', marginTop: '0.75rem', marginBottom: '1rem' }}
                     >
                         Cushion Covers Online
-                    </motion.h1>
-                    <motion.p
+                    </m.h1>
+                    <m.p
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                         style={{ color: 'rgba(255,255,255,0.45)', maxWidth: '480px', margin: '0 auto', lineHeight: 1.6 }}
                     >
                         Curated linen, embroidered & boucl cushions for sofas. Discover premium artistic decor to match your space.
-                    </motion.p>
+                    </m.p>
                 </div>
             </section>
 
@@ -162,7 +162,7 @@ export default function ShopClient({ initialProducts, initialCategory = 'All' }:
                                 />
                                 <AnimatePresence>
                                     {searchQuery && (
-                                        <motion.button
+                                        <m.button
                                             initial={{ opacity: 0, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.8 }}
@@ -182,7 +182,7 @@ export default function ShopClient({ initialProducts, initialCategory = 'All' }:
                                             }}
                                         >
                                             <X size={12} strokeWidth={3} />
-                                        </motion.button>
+                                        </m.button>
                                     )}
                                 </AnimatePresence>
                             </div>

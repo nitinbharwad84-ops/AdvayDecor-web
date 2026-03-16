@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { ArrowLeft, Save, Plus, Trash2, Upload, ImageIcon, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -34,7 +34,7 @@ export default function AdminProductEditPage() {
 
     const [form, setForm] = useState({
         title: '', slug: '', description: '', base_price: '',
-        category: '', has_variants: false, is_active: true,
+        category: '', category_id: '', has_variants: false, is_active: true,
         dimensions: '', material: '', filling_material: '',
         construction_details: '', care_instructions: '',
         usage_recommendations: '',
@@ -55,8 +55,8 @@ export default function AdminProductEditPage() {
                 if (Array.isArray(data)) {
                     setCategories(data);
                     // If creating new product and no category selected, default to the first
-                    if (isNew && data.length > 0) {
-                        setForm(prev => ({ ...prev, category: data[0].name }));
+                    if (isNew && data.length > 0 && !form.category) {
+                        setForm(prev => ({ ...prev, category: data[0].name, category_id: data[0].id }));
                     }
                 }
             })
@@ -77,7 +77,8 @@ export default function AdminProductEditPage() {
                         slug: product.slug,
                         description: product.description || '',
                         base_price: product.base_price.toString(),
-                        category: product.category,
+                        category: product.category || '',
+                        category_id: (product as any).category_id || '',
                         has_variants: product.has_variants,
                         is_active: product.is_active,
                         dimensions: product.dimensions || '',
@@ -120,7 +121,8 @@ export default function AdminProductEditPage() {
                 slug: form.slug,
                 description: form.description,
                 base_price: parseFloat(form.base_price),
-                category: form.category,
+                category: form.category || null,
+                category_id: form.category_id || null,
                 has_variants: form.has_variants,
                 is_active: form.is_active,
                 dimensions: form.dimensions,
@@ -356,7 +358,7 @@ export default function AdminProductEditPage() {
                         </button>
                     )}
 
-                    <motion.button
+                    <m.button
                         onClick={handleSave}
                         disabled={saving}
                         style={{
@@ -372,7 +374,7 @@ export default function AdminProductEditPage() {
                     >
                         {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
                         {saving ? 'Saving...' : 'Save Product'}
-                    </motion.button>
+                    </m.button>
                 </div>
             </div>
 
@@ -402,14 +404,19 @@ export default function AdminProductEditPage() {
                                 </div>
                                 <div>
                                     <label style={labelStyle}>Category</label>
-                                    <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={inputStyle}>
-                                        {categories.length === 0 ? (
-                                            <option value="">Loading categories...</option>
-                                        ) : (
-                                            categories.map(cat => (
-                                                <option key={cat.id} value={cat.name}>{cat.name}</option>
-                                            ))
-                                        )}
+                                    <select 
+                                        value={form.category_id || ''} 
+                                        onChange={(e) => {
+                                            const catId = e.target.value;
+                                            const catName = categories.find(c => c.id === catId)?.name || '';
+                                            setForm({ ...form, category_id: catId, category: catName });
+                                        }} 
+                                        style={inputStyle}
+                                    >
+                                        <option value="">None / Uncategorized</option>
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
@@ -540,7 +547,7 @@ export default function AdminProductEditPage() {
                         {form.has_variants && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {variants.map((variant, idx) => (
-                                    <motion.div key={variant.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                                    <m.div key={variant.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                                         style={{ padding: '1rem', borderRadius: '0.75rem', background: '#fafaf8', border: '1px solid #f0ece4' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                             <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0a0a23' }}>Variant {idx + 1}</span>
@@ -572,7 +579,7 @@ export default function AdminProductEditPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                    </motion.div>
+                                    </m.div>
                                 ))}
                                 <button onClick={addVariant} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.625rem', borderRadius: '0.75rem', border: '2px dashed #d4d0c8', background: 'none', color: '#64648b', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', width: '100%' }}>
                                     <Plus size={16} /> Add Variant

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { Plus, Search, Edit2, Trash2, MoreHorizontal, Package } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
@@ -64,7 +64,7 @@ export default function AdminProductsPage() {
                     <p style={{ fontSize: '0.875rem', color: '#9e9eb8', marginTop: '0.25rem' }}>Manage your product catalog ({allProducts.length} products)</p>
                 </div>
                 <Link href="/admin/products/new">
-                    <motion.button
+                    <m.button
                         style={{
                             display: 'flex', alignItems: 'center', gap: '0.5rem',
                             padding: '0.625rem 1.25rem', background: '#00b4d8', color: '#fff',
@@ -77,7 +77,7 @@ export default function AdminProductsPage() {
                     >
                         <Plus size={16} />
                         Add Product
-                    </motion.button>
+                    </m.button>
                 </Link>
             </div>
 
@@ -102,7 +102,7 @@ export default function AdminProductsPage() {
             </div>
 
             {/* Product Table */}
-            <motion.div
+            <m.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 style={{
@@ -191,7 +191,7 @@ export default function AdminProductsPage() {
                         <p style={{ color: '#64648b' }}>No products found</p>
                     </div>
                 )}
-            </motion.div>
+            </m.div>
         </div>
     );
 }

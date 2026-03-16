@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import {
     Star, ShoppingBag, Truck, RotateCcw, ShieldCheck as Shield, Heart,
     ChevronRight, ChevronLeft, Plus, Minus, MessageSquare, X
@@ -268,16 +268,16 @@ export default function ProductDetailClient({ product, allProducts }: ProductDet
                 <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem' }}>
                     <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: '2rem' }}>
                         {/* Left: Image Gallery */}
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.5 }}
                         >
                             <ImageGallery images={currentImages} />
-                        </motion.div>
+                        </m.div>
 
                         {/* Right: Product Info */}
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.5, delay: 0.1 }}
@@ -344,7 +344,7 @@ export default function ProductDetailClient({ product, allProducts }: ProductDet
 
                             {/* Add to Cart */}
                             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                                <motion.button
+                                <m.button
                                     onClick={handleAddToCart}
                                     disabled={stockQuantity <= 0}
                                     style={{
@@ -369,9 +369,9 @@ export default function ProductDetailClient({ product, allProducts }: ProductDet
                                 >
                                     <ShoppingBag size={18} />
                                     {stockQuantity <= 0 ? 'Out of Stock' : 'Add to Bag'}
-                                </motion.button>
+                                </m.button>
 
-                                <motion.button
+                                <m.button
                                     onClick={handleToggleWishlist}
                                     disabled={isWishlistLoading}
                                     style={{
@@ -388,14 +388,13 @@ export default function ProductDetailClient({ product, allProducts }: ProductDet
                                     aria-label="Toggle wishlist"
                                 >
                                     <Heart size={20} fill={isWishlisted ? 'currentColor' : 'none'} />
-                                </motion.button>
+                                </m.button>
                             </div>
 
-                            {/* Pincode Checker */}
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <PincodeChecker />
                             </div>
-                        </motion.div>
+                        </m.div>
                     </div>
 
                     {/* Product Promises (Full Width) */}
@@ -507,7 +506,7 @@ export default function ProductDetailClient({ product, allProducts }: ProductDet
                     {/* Write Review Form */}
                     <AnimatePresence>
                         {isReviewOpen && (
-                            <motion.div
+                            <m.div
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
@@ -556,7 +555,7 @@ export default function ProductDetailClient({ product, allProducts }: ProductDet
                                         </div>
                                     </form>
                                 </div>
-                            </motion.div>
+                            </m.div>
                         )}
                     </AnimatePresence>
 

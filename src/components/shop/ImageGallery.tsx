@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import type { ProductImage } from '@/types';
 
 interface ImageGalleryProps {
@@ -44,7 +44,7 @@ export default function ImageGallery({ images }: ImageGalleryProps) {
             {/* Main Image */}
             <div className="flex-1 relative aspect-square rounded-2xl overflow-hidden bg-cream-dark">
                 <AnimatePresence mode="wait">
-                    <motion.div
+                    <m.div
                         key={currentImage.id}
                         initial={{ opacity: 0, scale: 1.02 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -59,7 +59,7 @@ export default function ImageGallery({ images }: ImageGalleryProps) {
                             className="object-cover"
                             style={{ position: 'absolute', width: '100%', height: '100%', inset: 0, objectFit: 'cover' }}
                         />
-                    </motion.div>
+                    </m.div>
                 </AnimatePresence>
 
                 {/* Image counter */}

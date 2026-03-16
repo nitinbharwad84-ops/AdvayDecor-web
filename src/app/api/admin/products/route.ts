@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
         const body = await request.json();
         const { 
-            title, slug, description, base_price, category, has_variants, is_active, variants, images,
+            title, slug, description, base_price, category, category_id, has_variants, is_active, variants, images,
             dimensions, material, filling_material, construction_details, care_instructions, usage_recommendations
         } = body;
 
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
         const { data: product, error: productError } = await admin
             .from('products')
             .insert({ 
-                title, slug, description, base_price, category, has_variants, is_active,
+                title, slug, description, base_price, category, category_id, has_variants, is_active,
                 dimensions, material, filling_material, construction_details, care_instructions, usage_recommendations
             })
             .select()
@@ -110,7 +110,7 @@ export async function PUT(request: Request) {
 
         const body = await request.json();
         const { 
-            id, title, slug, description, base_price, category, has_variants, is_active, variants, images,
+            id, title, slug, description, base_price, category, category_id, has_variants, is_active, variants, images,
             dimensions, material, filling_material, construction_details, care_instructions, usage_recommendations
         } = body;
 
@@ -120,7 +120,7 @@ export async function PUT(request: Request) {
         const { error: updateError } = await admin
             .from('products')
             .update({ 
-                title, slug, description, base_price, category, has_variants, is_active,
+                title, slug, description, base_price, category, category_id, has_variants, is_active,
                 dimensions, material, filling_material, construction_details, care_instructions, usage_recommendations
             })
             .eq('id', id);

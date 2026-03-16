@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { Instagram, Facebook, Twitter, Mail, MapPin, Phone, Heart } from 'lucide-react';
 
 const footerLinks = {
@@ -55,7 +55,7 @@ export default function Footer() {
                         </p>
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
                             {socialLinks.map((social) => (
-                                <motion.a
+                                <m.a
                                     key={social.label}
                                     href={social.href}
                                     target="_blank"
@@ -77,7 +77,7 @@ export default function Footer() {
                                     aria-label={social.label}
                                 >
                                     <social.icon size={16} />
-                                </motion.a>
+                                </m.a>
                             ))}
                         </div>
                     </div>
