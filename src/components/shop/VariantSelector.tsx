@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import type { ProductVariant } from '@/types';
 
 interface VariantSelectorProps {
@@ -28,7 +28,7 @@ export default function VariantSelector({ variants, selectedVariant, onSelect }:
                     const isOutOfStock = variant.stock_quantity <= 0;
 
                     return (
-                        <motion.button
+                        <m.button
                             key={variant.id}
                             onClick={() => !isOutOfStock && onSelect(variant)}
                             disabled={isOutOfStock}
@@ -52,7 +52,7 @@ export default function VariantSelector({ variants, selectedVariant, onSelect }:
                         >
                             {variant.variant_name}
                             {isSelected && (
-                                <motion.div
+                                <m.div
                                     style={{
                                         position: 'absolute', top: '-0.3rem', right: '-0.3rem', width: '1rem', height: '1rem',
                                         background: '#00b4d8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -65,9 +65,9 @@ export default function VariantSelector({ variants, selectedVariant, onSelect }:
                                     <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
                                         <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
-                                </motion.div>
+                                </m.div>
                             )}
-                        </motion.button>
+                        </m.button>
                     );
                 })}
             </div>

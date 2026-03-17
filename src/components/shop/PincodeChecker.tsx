@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { MapPin, Truck, CheckCircle, XCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 
 interface PincodeResult {
     status: 'success' | 'error';
@@ -148,7 +148,7 @@ export default function PincodeChecker() {
             </div>
             <AnimatePresence>
                 {result && (
-                    <motion.div
+                    <m.div
                         initial={{ opacity: 0, y: -10, height: 0 }}
                         animate={{ opacity: 1, y: 0, height: 'auto' }}
                         exit={{ opacity: 0, y: -10, height: 0 }}
@@ -187,7 +187,7 @@ export default function PincodeChecker() {
                                 </p>
                             )}
                         </div>
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 interface StockIndicatorProps {
     quantity: number;
@@ -18,7 +18,7 @@ export default function StockIndicator({ quantity }: StockIndicatorProps) {
 
     if (quantity < 5) {
         return (
-            <motion.div
+            <m.div
                 className="flex items-center gap-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -27,7 +27,7 @@ export default function StockIndicator({ quantity }: StockIndicatorProps) {
                 <span className="text-sm font-medium text-danger">
                     Only {quantity} left!
                 </span>
-            </motion.div>
+            </m.div>
         );
     }
 
