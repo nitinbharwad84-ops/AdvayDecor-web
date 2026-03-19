@@ -65,9 +65,9 @@ export default function ImageGallery({
         const delta = clientX - dragStartX.current;
         // Clamp: can't go past first/last image
         const clamped = selectedIndex === 0
-            ? Math.min(delta, 80)
+            ? Math.min(delta, 40)
             : selectedIndex === displayImages.length - 1
-                ? Math.max(delta, -80)
+                ? Math.max(delta, -40)
                 : delta;
         currentDragOffset.current = clamped;
         setDragOffset(clamped);
@@ -83,9 +83,9 @@ export default function ImageGallery({
 
         if (isClick && Math.abs(delta) < 8) {
             setIsLightboxOpen(true);
-        } else if (delta < -60) {
+        } else if (delta < -80) {
             next();
-        } else if (delta > 60) {
+        } else if (delta > 80) {
             prev();
         }
     };
@@ -99,12 +99,15 @@ export default function ImageGallery({
     const onMouseDown = (e: React.MouseEvent) => { e.preventDefault(); startDrag(e.clientX); };
     const onMouseMove = (e: React.MouseEvent) => moveDrag(e.clientX);
     const onMouseUp = (e: React.MouseEvent) => { e.preventDefault(); endDrag(true); };
-    const onMouseLeave = () => { if (isDragging.current) { isDragging.current = false; const d = currentDragOffset.current; setDragOffset(0); currentDragOffset.current = 0; if (d < -60) next(); else if (d > 60) prev(); } };
+    const onMouseLeave = () => { if (isDragging.current) { isDragging.current = false; const d = currentDragOffset.current; setDragOffset(0); currentDragOffset.current = 0; if (d < -80) next(); else if (d > 80) prev(); } };
 
     // ─── Strip transform ──────────────────────────────────────────────────────
-    // The strip is (N * 100%) wide, and we shift it so the active image is visible.
-    const translateX = `calc(${-selectedIndex * 100}% + ${dragOffset}px)`;
-    const transition = isDragging.current ? 'none' : 'transform 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    // The strip width = N * containerWidth.
+    // translateX(%) is relative to the strip's own width.
+    // To show image at index i: shift = -(i / N) * 100% of strip = -i * containerWidth
+    const pct = -selectedIndex * (100 / displayImages.length);
+    const translateX = `calc(${pct}% + ${dragOffset / displayImages.length}px)`;
+    const transition = isDragging.current ? 'none' : 'transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1)';
 
     return (
         <>
@@ -164,6 +167,7 @@ export default function ImageGallery({
                                     width: `${100 / displayImages.length}%`,
                                     flexShrink: 0,
                                     position: 'relative',
+                                    background: '#f5f0e8',
                                 }}
                             >
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
