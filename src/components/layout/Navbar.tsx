@@ -99,7 +99,7 @@ export default function Navbar() {
                                 alt="Advay Decor"
                                 width={36}
                                 height={36}
-                                style={{ objectFit: 'contain', width: '36px', height: 'auto' }}
+                                style={{ objectFit: 'contain', width: '36px', height: '36px' }}
                                 priority
                                 fetchPriority="high"
                             />
@@ -369,7 +369,7 @@ export default function Navbar() {
                                         alt="Advay Decor"
                                         width={32}
                                         height={32}
-                                        style={{ objectFit: 'contain', width: '32px', height: 'auto' }}
+                                        style={{ objectFit: 'contain', width: '32px', height: '32px' }}
                                     />
                                     <span
                                         className="font-[family-name:var(--font-display)]"

@@ -207,7 +207,7 @@ export default function LoginPage() {
                             alt="Advay Decor"
                             width={48}
                             height={48}
-                            style={{ objectFit: 'contain', width: '48px', height: 'auto' }}
+                            style={{ objectFit: 'contain', width: '48px', height: '48px' }}
                             priority
                         />
                         <span className="font-[family-name:var(--font-display)]" style={{ fontSize: '1.75rem', fontWeight: 700 }}>

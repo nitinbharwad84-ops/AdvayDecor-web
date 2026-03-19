@@ -43,7 +43,7 @@ export default function Footer() {
                                 alt="Advay Decor"
                                 width={36}
                                 height={36}
-                                style={{ objectFit: 'contain', width: '36px', height: 'auto' }}
+                                style={{ objectFit: 'contain', width: '36px', height: '36px' }}
                             />
                             <span className="font-[family-name:var(--font-display)]" style={{ fontSize: '1.5rem', fontWeight: 700 }}>
                                 <span style={{ color: '#fff' }}>Advay</span>

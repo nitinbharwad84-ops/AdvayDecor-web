@@ -137,7 +137,7 @@ export default function AdminLoginPage() {
                             alt="Advay Decor"
                             width={48}
                             height={48}
-                            style={{ objectFit: 'contain', width: '48px', height: 'auto' }}
+                            style={{ objectFit: 'contain', width: '48px', height: '48px' }}
                             priority
                         />
                     </m.div>
