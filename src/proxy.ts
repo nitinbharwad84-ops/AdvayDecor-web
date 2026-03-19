@@ -39,7 +39,7 @@ function getClientIP(request: NextRequest): string {
     );
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const host = request.headers.get('host');
     const searchParams = request.nextUrl.search;
     const pathname = request.nextUrl.pathname;
